@@ -19,6 +19,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+# Register all ORM models on Base.metadata before init_db / create_all.
+import app.models  # noqa: F401
 from app.config import Settings, get_settings
 from app.db import get_db, init_db
 from app.main import create_app
