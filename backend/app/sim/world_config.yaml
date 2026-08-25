@@ -1,0 +1,540 @@
+# =============================================================================
+# RevivePay AI — HELD-OUT OUTCOME ENVIRONMENT ("the world")
+# =============================================================================
+#
+# WHAT THIS FILE IS
+# -----------------
+# This file defines the GROUND TRUTH of the simulated payments world: the true
+# probability that a given recovery intervention succeeds, the true cost of
+# taking it, and the true harm done by over-contacting a customer.
+#
+# It is the GRADER. The agent being graded must never be able to read it.
+#
+# WHY IT IS PRE-REGISTERED
+# ------------------------
+# The sha256 of this file is committed to WORLD_CONFIG_HASH.txt BEFORE any
+# agent, model or policy is evaluated against it, and a test asserts the two
+# match. If anyone tunes these numbers after seeing results, that test fails
+# and the tampering is visible in git history. Without this, a simulated
+# benchmark is worthless: the author of the simulator can always make their
+# own agent look good.
+#
+# ENFORCEMENT
+# -----------
+# An AST-based architecture test (backend/tests/test_architecture.py) forbids
+# any module under app/policy/, app/decision/, app/agent/ or app/ml/ from
+# importing app.sim.environment, app.sim.oracle, app.sim.generators,
+# app.sim.legacy_policy, or referencing the string "world_config".
+#
+# HONESTY NOTICE
+# --------------
+# Every number below is an ILLUSTRATIVE SYNTHETIC PARAMETER chosen to be
+# directionally plausible for Indian online payments. NONE of it is Razorpay
+# production data, and no claim is made that these values match reality. The
+# purpose is a self-consistent world in which competing policies can be
+# compared fairly, not a forecast of real recovery rates.
+#
+# Seeds are NOT defined here. They come from SIM_LOGGED_SEED (training history)
+# and SIM_EVAL_SEED (evaluation), so that no model is ever evaluated on the
+# seed that produced its training data.
+# =============================================================================
+
+config_version: "1.0.0"
+
+notes: >
+  Illustrative synthetic parameters for a simulated Indian online-payments
+  recovery environment. Not Razorpay production data. Not derived from any
+  real merchant, customer or issuer. Directionally plausible only.
+
+currency: INR
+minor_units_per_unit: 100          # all money in this project is integer paise
+timezone: Asia/Kolkata
+
+
+# =============================================================================
+# 1. FAILURE CLASSES — base probability that a plain retry eventually succeeds
+# =============================================================================
+# Reasoning per class is given inline. The key structural fact the world
+# encodes: SOME FAILURES ARE UNRECOVERABLE BY RETRY. A policy that does not
+# learn this will waste money, and a policy that does will beat it. This is
+# deliberately the largest single source of achievable uplift.
+
+failure_classes:
+
+  INSUFFICIENT_FUNDS:
+    base_retry_success: 0.22
+    # Balance-driven. A retry one minute later almost never helps; a retry
+    # after payday can. Strongly delay-sensitive, which rewards timing.
+    delay_sensitive: true
+    recoverable: true
+
+  BANK_DOWNTIME:
+    base_retry_success: 0.55
+    # Transient issuer/rail outage. Success depends almost entirely on whether
+    # the downtime window has passed, so correct waiting beats fast retrying.
+    delay_sensitive: true
+    recoverable: true
+
+  NETWORK_TIMEOUT:
+    base_retry_success: 0.62
+    # Usually a dropped leg rather than a real decline. Immediate retry is
+    # genuinely effective here — the one case where speed wins.
+    delay_sensitive: false
+    recoverable: true
+
+  AUTH_FAILURE:
+    base_retry_success: 0.18
+    # Customer abandoned OTP/3DS. Retrying the same charge does little; the
+    # fix is re-engaging the human. Rewards choosing a nudge over a retry.
+    delay_sensitive: false
+    recoverable: true
+
+  LIMIT_EXCEEDED:
+    base_retry_success: 0.30
+    # Per-transaction or daily caps that reset. Waiting for the reset window
+    # is the correct action.
+    delay_sensitive: true
+    recoverable: true
+
+  RISK_DECLINE:
+    base_retry_success: 0.08
+    # Issuer risk engine said no. Repeated attempts can worsen the signal,
+    # so the world penalises retry stacking on this class (see attempt_decay).
+    delay_sensitive: false
+    recoverable: true
+
+  CARD_EXPIRED:
+    base_retry_success: 0.015
+    # STRUCTURALLY UNRECOVERABLE BY RETRY. The instrument is dead. Only
+    # collecting a new instrument can work. Near-zero, not zero, to leave a
+    # sliver of noise rather than a giveaway signal.
+    delay_sensitive: false
+    recoverable: false
+
+  HARD_DECLINE:
+    base_retry_success: 0.008
+    # Terminal issuer refusal (stolen/blocked/closed). Retrying is pure cost
+    # and, in the real world, a compliance problem. The policy kernel forbids
+    # it outright (rule R003); the world makes it economically stupid too, so
+    # the ban is justified by evidence rather than assertion.
+    delay_sensitive: false
+    recoverable: false
+
+
+# =============================================================================
+# 2. INTERVENTIONS — what the agent may actually do
+# =============================================================================
+# cost_minor is the direct cost of taking the action, in paise.
+# contacts_customer marks actions that consume the contact budget and can
+# therefore cause annoyance and churn.
+
+interventions:
+
+  STOP:
+    cost_minor: 0
+    contacts_customer: false
+    # Doing nothing is a first-class action. On a small enough failure it is
+    # the OPTIMAL action, and an agent that cannot choose it is not optimising
+    # net value. This is the signature demo moment.
+
+  RETRY_SAME_RAIL:
+    cost_minor: 300              # ~Rs 3 gateway attempt cost
+    contacts_customer: false
+
+  RETRY_ALTERNATE_RAIL:
+    cost_minor: 450              # ~Rs 4.50, alternate rail costs more
+    contacts_customer: false
+    # Routing around a specific rail's downtime. Effective for BANK_DOWNTIME
+    # and NETWORK_TIMEOUT, useless for balance and instrument problems.
+
+  EMAIL_NUDGE:
+    cost_minor: 2                # ~Rs 0.02
+    contacts_customer: true
+
+  SMS_NUDGE:
+    cost_minor: 20               # ~Rs 0.20
+    contacts_customer: true
+
+  WHATSAPP_NUDGE:
+    cost_minor: 12               # ~Rs 0.12 utility template
+    contacts_customer: true
+    # Cheaper than SMS and higher-converting in this world, so a naive
+    # cost-minimising policy and a naive conversion-maximising policy both
+    # land here — the interesting decisions are elsewhere.
+
+  REQUEST_NEW_INSTRUMENT:
+    cost_minor: 20
+    contacts_customer: true
+    # The ONLY action that can recover CARD_EXPIRED. Discovering this from
+    # logged data is a real learning task, not a lookup.
+
+  AGENT_CALL:
+    cost_minor: 3500             # ~Rs 35 of human time
+    contacts_customer: true
+    # High conversion, high cost. Correct only on large amounts. An agent
+    # that calls about a Rs 49 failure is destroying value, and the net-EV
+    # objective must catch that.
+
+
+# =============================================================================
+# 3. TIMING — when the action is taken
+# =============================================================================
+
+retry_delay_bands:
+  IMMEDIATE:  { seconds: 0,      label: "<1 min" }
+  SHORT:      { seconds: 300,    label: "5 min" }
+  MEDIUM:     { seconds: 3600,   label: "1 hour" }
+  LONG:       { seconds: 86400,  label: "24 hours" }
+  EXTENDED:   { seconds: 259200, label: "72 hours" }
+
+
+# =============================================================================
+# 4. INTERVENTION x TIMING MULTIPLIERS
+# =============================================================================
+# Applied to failure_classes[c].base_retry_success. This matrix is where the
+# real structure of the problem lives: the best action depends jointly on the
+# failure class AND the delay. A fixed retry ladder (baseline B1) cannot
+# express that, which is precisely why it loses.
+#
+# A multiplier of 0.0 means the action cannot succeed for that class.
+
+multipliers:
+
+  INSUFFICIENT_FUNDS:
+    RETRY_SAME_RAIL:        { IMMEDIATE: 0.15, SHORT: 0.30, MEDIUM: 0.65, LONG: 1.40, EXTENDED: 1.75 }
+    RETRY_ALTERNATE_RAIL:   { IMMEDIATE: 0.18, SHORT: 0.32, MEDIUM: 0.66, LONG: 1.35, EXTENDED: 1.60 }
+    EMAIL_NUDGE:            { IMMEDIATE: 0.20, SHORT: 0.35, MEDIUM: 0.70, LONG: 1.10, EXTENDED: 1.05 }
+    SMS_NUDGE:              { IMMEDIATE: 0.35, SHORT: 0.60, MEDIUM: 1.05, LONG: 1.55, EXTENDED: 1.40 }
+    WHATSAPP_NUDGE:         { IMMEDIATE: 0.40, SHORT: 0.68, MEDIUM: 1.15, LONG: 1.70, EXTENDED: 1.50 }
+    REQUEST_NEW_INSTRUMENT: { IMMEDIATE: 0.25, SHORT: 0.40, MEDIUM: 0.70, LONG: 1.00, EXTENDED: 0.95 }
+    AGENT_CALL:             { IMMEDIATE: 0.60, SHORT: 0.95, MEDIUM: 1.45, LONG: 2.10, EXTENDED: 1.85 }
+
+  BANK_DOWNTIME:
+    RETRY_SAME_RAIL:        { IMMEDIATE: 0.10, SHORT: 0.45, MEDIUM: 1.30, LONG: 1.55, EXTENDED: 1.55 }
+    RETRY_ALTERNATE_RAIL:   { IMMEDIATE: 1.35, SHORT: 1.45, MEDIUM: 1.50, LONG: 1.50, EXTENDED: 1.45 }
+    EMAIL_NUDGE:            { IMMEDIATE: 0.10, SHORT: 0.25, MEDIUM: 0.55, LONG: 0.70, EXTENDED: 0.65 }
+    SMS_NUDGE:              { IMMEDIATE: 0.15, SHORT: 0.35, MEDIUM: 0.70, LONG: 0.85, EXTENDED: 0.75 }
+    WHATSAPP_NUDGE:         { IMMEDIATE: 0.18, SHORT: 0.40, MEDIUM: 0.78, LONG: 0.92, EXTENDED: 0.80 }
+    REQUEST_NEW_INSTRUMENT: { IMMEDIATE: 0.05, SHORT: 0.10, MEDIUM: 0.20, LONG: 0.28, EXTENDED: 0.25 }
+    AGENT_CALL:             { IMMEDIATE: 0.30, SHORT: 0.55, MEDIUM: 0.95, LONG: 1.10, EXTENDED: 1.00 }
+
+  NETWORK_TIMEOUT:
+    RETRY_SAME_RAIL:        { IMMEDIATE: 1.45, SHORT: 1.30, MEDIUM: 1.00, LONG: 0.75, EXTENDED: 0.60 }
+    RETRY_ALTERNATE_RAIL:   { IMMEDIATE: 1.50, SHORT: 1.35, MEDIUM: 1.05, LONG: 0.78, EXTENDED: 0.62 }
+    EMAIL_NUDGE:            { IMMEDIATE: 0.30, SHORT: 0.35, MEDIUM: 0.40, LONG: 0.38, EXTENDED: 0.30 }
+    SMS_NUDGE:              { IMMEDIATE: 0.45, SHORT: 0.50, MEDIUM: 0.55, LONG: 0.50, EXTENDED: 0.40 }
+    WHATSAPP_NUDGE:         { IMMEDIATE: 0.50, SHORT: 0.56, MEDIUM: 0.60, LONG: 0.55, EXTENDED: 0.44 }
+    REQUEST_NEW_INSTRUMENT: { IMMEDIATE: 0.10, SHORT: 0.12, MEDIUM: 0.15, LONG: 0.15, EXTENDED: 0.12 }
+    AGENT_CALL:             { IMMEDIATE: 0.70, SHORT: 0.80, MEDIUM: 0.85, LONG: 0.80, EXTENDED: 0.65 }
+
+  AUTH_FAILURE:
+    RETRY_SAME_RAIL:        { IMMEDIATE: 0.35, SHORT: 0.45, MEDIUM: 0.55, LONG: 0.50, EXTENDED: 0.40 }
+    RETRY_ALTERNATE_RAIL:   { IMMEDIATE: 0.55, SHORT: 0.65, MEDIUM: 0.75, LONG: 0.68, EXTENDED: 0.55 }
+    EMAIL_NUDGE:            { IMMEDIATE: 0.80, SHORT: 1.05, MEDIUM: 1.25, LONG: 1.10, EXTENDED: 0.85 }
+    SMS_NUDGE:              { IMMEDIATE: 1.30, SHORT: 1.65, MEDIUM: 1.85, LONG: 1.55, EXTENDED: 1.15 }
+    WHATSAPP_NUDGE:         { IMMEDIATE: 1.45, SHORT: 1.80, MEDIUM: 2.00, LONG: 1.70, EXTENDED: 1.25 }
+    REQUEST_NEW_INSTRUMENT: { IMMEDIATE: 0.90, SHORT: 1.10, MEDIUM: 1.25, LONG: 1.10, EXTENDED: 0.90 }
+    AGENT_CALL:             { IMMEDIATE: 1.70, SHORT: 2.05, MEDIUM: 2.30, LONG: 2.00, EXTENDED: 1.50 }
+
+  LIMIT_EXCEEDED:
+    RETRY_SAME_RAIL:        { IMMEDIATE: 0.08, SHORT: 0.20, MEDIUM: 0.55, LONG: 1.60, EXTENDED: 1.70 }
+    RETRY_ALTERNATE_RAIL:   { IMMEDIATE: 0.85, SHORT: 0.95, MEDIUM: 1.10, LONG: 1.55, EXTENDED: 1.55 }
+    EMAIL_NUDGE:            { IMMEDIATE: 0.15, SHORT: 0.25, MEDIUM: 0.50, LONG: 0.95, EXTENDED: 0.90 }
+    SMS_NUDGE:              { IMMEDIATE: 0.25, SHORT: 0.40, MEDIUM: 0.75, LONG: 1.30, EXTENDED: 1.20 }
+    WHATSAPP_NUDGE:         { IMMEDIATE: 0.28, SHORT: 0.45, MEDIUM: 0.82, LONG: 1.42, EXTENDED: 1.30 }
+    REQUEST_NEW_INSTRUMENT: { IMMEDIATE: 0.55, SHORT: 0.70, MEDIUM: 0.90, LONG: 1.15, EXTENDED: 1.05 }
+    AGENT_CALL:             { IMMEDIATE: 0.65, SHORT: 0.85, MEDIUM: 1.25, LONG: 1.80, EXTENDED: 1.60 }
+
+  RISK_DECLINE:
+    RETRY_SAME_RAIL:        { IMMEDIATE: 0.25, SHORT: 0.35, MEDIUM: 0.55, LONG: 0.85, EXTENDED: 0.95 }
+    RETRY_ALTERNATE_RAIL:   { IMMEDIATE: 0.70, SHORT: 0.85, MEDIUM: 1.05, LONG: 1.25, EXTENDED: 1.25 }
+    EMAIL_NUDGE:            { IMMEDIATE: 0.20, SHORT: 0.28, MEDIUM: 0.40, LONG: 0.55, EXTENDED: 0.55 }
+    SMS_NUDGE:              { IMMEDIATE: 0.30, SHORT: 0.40, MEDIUM: 0.58, LONG: 0.75, EXTENDED: 0.72 }
+    WHATSAPP_NUDGE:         { IMMEDIATE: 0.34, SHORT: 0.45, MEDIUM: 0.64, LONG: 0.82, EXTENDED: 0.78 }
+    REQUEST_NEW_INSTRUMENT: { IMMEDIATE: 1.10, SHORT: 1.25, MEDIUM: 1.45, LONG: 1.60, EXTENDED: 1.50 }
+    AGENT_CALL:             { IMMEDIATE: 1.20, SHORT: 1.40, MEDIUM: 1.65, LONG: 1.85, EXTENDED: 1.70 }
+
+  CARD_EXPIRED:
+    # Retry multipliers are ZERO. No amount of retrying revives a dead card.
+    RETRY_SAME_RAIL:        { IMMEDIATE: 0.0,  SHORT: 0.0,  MEDIUM: 0.0,  LONG: 0.0,  EXTENDED: 0.0 }
+    RETRY_ALTERNATE_RAIL:   { IMMEDIATE: 0.0,  SHORT: 0.0,  MEDIUM: 0.0,  LONG: 0.0,  EXTENDED: 0.0 }
+    EMAIL_NUDGE:            { IMMEDIATE: 3.5,  SHORT: 4.5,  MEDIUM: 6.0,  LONG: 7.0,  EXTENDED: 6.0 }
+    SMS_NUDGE:              { IMMEDIATE: 5.0,  SHORT: 6.5,  MEDIUM: 8.5,  LONG: 9.5,  EXTENDED: 8.0 }
+    WHATSAPP_NUDGE:         { IMMEDIATE: 5.5,  SHORT: 7.0,  MEDIUM: 9.2,  LONG: 10.5, EXTENDED: 8.8 }
+    REQUEST_NEW_INSTRUMENT: { IMMEDIATE: 14.0, SHORT: 17.0, MEDIUM: 21.0, LONG: 23.0, EXTENDED: 19.0 }
+    AGENT_CALL:             { IMMEDIATE: 16.0, SHORT: 19.0, MEDIUM: 23.0, LONG: 25.0, EXTENDED: 21.0 }
+    # Large multipliers on a 0.015 base give a realistic ceiling
+    # (0.015 * 23 = 0.345) without ever reaching certainty.
+
+  HARD_DECLINE:
+    # Terminal. Nothing works. Non-zero only so the model must learn a small
+    # number rather than memorise an exact zero.
+    RETRY_SAME_RAIL:        { IMMEDIATE: 0.0,  SHORT: 0.0,  MEDIUM: 0.0,  LONG: 0.0,  EXTENDED: 0.0 }
+    RETRY_ALTERNATE_RAIL:   { IMMEDIATE: 0.0,  SHORT: 0.0,  MEDIUM: 0.0,  LONG: 0.0,  EXTENDED: 0.0 }
+    EMAIL_NUDGE:            { IMMEDIATE: 0.8,  SHORT: 0.9,  MEDIUM: 1.0,  LONG: 1.0,  EXTENDED: 0.9 }
+    SMS_NUDGE:              { IMMEDIATE: 1.0,  SHORT: 1.1,  MEDIUM: 1.2,  LONG: 1.2,  EXTENDED: 1.0 }
+    WHATSAPP_NUDGE:         { IMMEDIATE: 1.1,  SHORT: 1.2,  MEDIUM: 1.3,  LONG: 1.3,  EXTENDED: 1.1 }
+    REQUEST_NEW_INSTRUMENT: { IMMEDIATE: 2.2,  SHORT: 2.5,  MEDIUM: 2.8,  LONG: 3.0,  EXTENDED: 2.6 }
+    AGENT_CALL:             { IMMEDIATE: 2.4,  SHORT: 2.7,  MEDIUM: 3.0,  LONG: 3.2,  EXTENDED: 2.8 }
+
+
+# =============================================================================
+# 5. ATTEMPT DECAY — repeated attempts get worse
+# =============================================================================
+# Multiplier applied by attempt index (1-based). Without this, an unconstrained
+# policy would discover that spamming retries is free upside. With it,
+# persistence has diminishing and then negative returns, which is what makes
+# the max-attempts rule (R002) economically justified rather than arbitrary.
+
+attempt_decay:
+  1: 1.00
+  2: 0.72
+  3: 0.48
+  4: 0.29
+  5: 0.16
+  default_beyond: 0.08
+
+# RISK_DECLINE additionally worsens with attempts: issuers penalise retry
+# stacking. Applied on top of attempt_decay for that class only.
+risk_decline_retry_penalty_per_attempt: 0.65
+
+
+# =============================================================================
+# 6. CUSTOMER SEGMENTS
+# =============================================================================
+# success_multiplier: engaged customers respond better to everything.
+# lifetime_value_minor: what churning one actually costs. This is what makes
+#   over-contacting a HIGH_VALUE customer expensive, and it is why the agent
+#   must weigh annoyance rather than maximising recovery rate.
+# churn_sensitivity: multiplies the annoyance hazard. New customers are the
+#   quickest to leave; loyal ones tolerate more.
+
+customer_segments:
+
+  NEW:
+    weight: 0.30
+    success_multiplier: 0.85
+    lifetime_value_minor: 180000        # Rs 1,800
+    churn_sensitivity: 1.45
+
+  OCCASIONAL:
+    weight: 0.40
+    success_multiplier: 1.00
+    lifetime_value_minor: 650000        # Rs 6,500
+    churn_sensitivity: 1.00
+
+  LOYAL:
+    weight: 0.22
+    success_multiplier: 1.18
+    lifetime_value_minor: 2400000       # Rs 24,000
+    churn_sensitivity: 0.70
+
+  HIGH_VALUE:
+    weight: 0.08
+    success_multiplier: 1.25
+    lifetime_value_minor: 9500000       # Rs 95,000
+    churn_sensitivity: 0.55
+    # Low sensitivity but enormous LTV, so the expected churn cost is still
+    # the highest of any segment. The correct behaviour is fewer, better-timed
+    # contacts — a genuinely non-obvious trade-off for the agent to find.
+
+
+# =============================================================================
+# 7. AMOUNT BANDS
+# =============================================================================
+# Larger amounts are harder to recover on balance-type failures and easier to
+# justify expensive interventions on. Both effects matter: the first is a
+# probability effect, the second an economic one.
+
+amount_bands:
+
+  MICRO:
+    max_minor: 10000                   # up to Rs 100
+    weight: 0.34
+    success_multiplier: 1.12
+    # Easy to recover, but almost nothing is worth spending on it. This band
+    # is where STOP is usually optimal and where naive policies bleed money.
+
+  SMALL:
+    max_minor: 100000                  # up to Rs 1,000
+    weight: 0.38
+    success_multiplier: 1.00
+
+  MEDIUM:
+    max_minor: 1000000                 # up to Rs 10,000
+    weight: 0.20
+    success_multiplier: 0.90
+
+  LARGE:
+    max_minor: 5000000                 # up to Rs 50,000
+    weight: 0.065
+    success_multiplier: 0.78
+
+  XLARGE:
+    max_minor: null                    # above Rs 50,000
+    weight: 0.015
+    success_multiplier: 0.68
+    # Hardest to recover, but the only band where AGENT_CALL pays for itself.
+
+
+# =============================================================================
+# 8. ANNOYANCE AND CHURN HAZARD
+# =============================================================================
+# Probability that a customer churns as a direct result of the Nth contact
+# within the rolling window. Convex: the first message is nearly free, the
+# fifth is expensive. Multiplied by the segment's churn_sensitivity, and
+# costed at that segment's lifetime_value_minor.
+#
+# This is the term that makes "recovery rate" the WRONG objective and net
+# value the right one. A policy maximising recovery will contact until it
+# succeeds; a policy maximising net value will stop.
+
+churn_hazard_by_contact_index:
+  1: 0.0015
+  2: 0.0042
+  3: 0.0110
+  4: 0.0265
+  5: 0.0540
+  default_beyond: 0.0950
+
+contact_window_days: 7
+
+# Contacting during quiet hours roughly triples the annoyance effect while
+# reducing conversion — so night-time contact is bad on both sides of the
+# ledger, and policy rule R017 (quiet hours) has an economic basis.
+quiet_hours:
+  start_hour: 21
+  end_hour: 9
+  churn_hazard_multiplier: 3.0
+  success_multiplier: 0.55
+
+
+# =============================================================================
+# 9. TIME-OF-DAY RESPONSE
+# =============================================================================
+# Applied to customer-contacting interventions only. Retries are unaffected.
+# Creates a genuine timing decision beyond simple delay length.
+
+hour_of_day_response_multiplier:
+  0: 0.35
+  1: 0.28
+  2: 0.25
+  3: 0.25
+  4: 0.30
+  5: 0.40
+  6: 0.60
+  7: 0.85
+  8: 1.05
+  9: 1.20
+  10: 1.30
+  11: 1.28
+  12: 1.15
+  13: 1.05
+  14: 1.10
+  15: 1.18
+  16: 1.22
+  17: 1.25
+  18: 1.30
+  19: 1.35
+  20: 1.20
+  21: 0.85
+  22: 0.60
+  23: 0.45
+
+
+# =============================================================================
+# 10. BANK DOWNTIME WINDOWS
+# =============================================================================
+# Recurring outages by rail. During a window, RETRY_SAME_RAIL on that rail is
+# crippled while RETRY_ALTERNATE_RAIL still works. An agent that learns to
+# route around a live outage gains real uplift; a fixed ladder cannot.
+
+rails:
+  - id: RAIL_A
+    label: "Card network A"
+    weight: 0.40
+  - id: RAIL_B
+    label: "Card network B"
+    weight: 0.25
+  - id: RAIL_UPI
+    label: "UPI"
+    weight: 0.25
+  - id: RAIL_NETBANKING
+    label: "Netbanking"
+    weight: 0.10
+
+downtime_windows:
+  - rail: RAIL_A
+    recurrence: daily
+    start_hour: 2
+    start_minute: 0
+    duration_minutes: 45
+    severity: 0.80                     # multiplies same-rail success
+    note: "Nightly issuer maintenance."
+
+  - rail: RAIL_NETBANKING
+    recurrence: weekly
+    weekday: 6                         # Sunday, Monday=0
+    start_hour: 1
+    start_minute: 0
+    duration_minutes: 120
+    severity: 0.90
+    note: "Weekly core-banking batch window."
+
+  - rail: RAIL_UPI
+    recurrence: daily
+    start_hour: 23
+    start_minute: 30
+    duration_minutes: 30
+    severity: 0.55
+    note: "End-of-day switch reconciliation, partial degradation."
+
+
+# =============================================================================
+# 11. ECONOMICS
+# =============================================================================
+# The objective the agent must maximise:
+#
+#   net_ev = p_success * amount_minor * (1 - mdr_bps/10000)
+#            - intervention_cost_minor
+#            - expected_churn_cost_minor
+#
+# where expected_churn_cost_minor =
+#   churn_hazard[contact_index] * churn_sensitivity * lifetime_value_minor
+#
+# Note this can be NEGATIVE, and on MICRO amounts it usually is for every
+# action except STOP. That is the intended result, not a bug.
+
+economics:
+  mdr_bps: 200                         # 2.00% merchant discount rate
+  failed_payment_salvage_rate: 0.0     # nothing is recovered if we do nothing
+  max_horizon_hours: 168               # a case is closed after 7 days
+
+
+# =============================================================================
+# 12. OBSERVATION NOISE
+# =============================================================================
+# The world adds noise so that the Bayes-optimal predictor is NOT perfect.
+# This is deliberate: it lets the evaluation report an achievable ceiling
+# (bayes_optimal_brier) alongside the model's score. "Brier 0.142 against a
+# Bayes floor of 0.118" is a credible claim; "94% accurate" is not.
+#
+# feature_noise_std perturbs the features the AGENT sees, never the true
+# probability used to sample the outcome. So the agent works with a slightly
+# blurred view of a world it cannot read directly.
+
+observation:
+  feature_noise_std: 0.04
+  latent_customer_patience:
+    # An observable-but-noisy per-customer trait. Predictive, so a good model
+    # can use it; noisy, so no model can be perfect.
+    distribution: beta
+    alpha: 2.5
+    beta: 2.5
+    success_multiplier_range: [0.80, 1.22]
+
+probability_clamp:
+  min: 0.001
+  max: 0.94
+  # Never certain in either direction. Prevents degenerate log-loss and stops
+  # any policy from finding a guaranteed win.
