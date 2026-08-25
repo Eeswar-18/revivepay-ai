@@ -1,0 +1,65 @@
+version: "3.9"
+
+# RevivePay AI — Docker Compose
+#
+# Usage:
+#   docker compose up          Start both services
+#   docker compose up backend  Start backend only
+#   docker compose up frontend Start frontend only
+#
+# NOTE: In Phase 0, the backend and frontend are not yet implemented.
+# This file defines the target service topology. Services will become
+# functional as phases are completed.
+
+services:
+  # ── Backend (FastAPI) ────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: revivepay-backend:dev
+    container_name: revivepay_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to use a named volume path inside the container
+      DATABASE_URL: sqlite+aiosqlite:////data/revivepay.db
+      API_HOST: "0.0.0.0"
+      API_PORT: "8000"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      # Persist the SQLite database across container restarts
+      - db_data:/data
+      # Mount source for hot-reload in development
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ── Frontend (Next.js) ───────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: revivepay-frontend:dev
+    container_name: revivepay_frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # The frontend reaches the backend via the Docker internal network
+      NEXT_PUBLIC_API_BASE_URL: "http://backend:8000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db_data:
+    driver: local

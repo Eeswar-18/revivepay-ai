@@ -1,0 +1,131 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+.python-version
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+junit*.xml
+
+# Ruff
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Node / Next.js / frontend
+node_modules/
+.next/
+out/
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.yarn/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment and secrets — NEVER COMMIT REAL KEYS
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# SQLite databases (generated at runtime)
+*.db
+*.sqlite
+*.sqlite3
+backend/revivepay.db
+backend/revivepay_test.db
+
+# Generated data and reports (keep only committed samples)
+data/*.csv
+data/*.parquet
+data/*.json
+!data/sample_*.csv
+reports/*.json
+reports/*.html
+reports/*.pdf
+!reports/sample_report.json
+
+# Build artifacts
+*.log
+logs/
+*.tmp
+*.bak
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# IDE and editor folders
+.idea/
+.vscode/
+*.code-workspace
+.history/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Antigravity IDE local files
+.antigravity/
+.antigravity-local/
+
+# Docker
+.docker/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
