@@ -285,3 +285,78 @@ random seed as strategy 6 so environmental variance is zero.
 - **A/B test against live traffic:** Correct for production; not feasible in a prototype
   without a live payment system.
 - **Reporting only wins:** Rejected on integrity grounds (see AGENTS.md invariants).
+
+---
+
+## ADR-0009 — Generic BaseRepository plus selective concrete repositories
+
+**Date:** 2026-08-25
+**Status:** Accepted
+
+### Context
+Every ORM table could have its own repository class. Doing so produces near-identical
+wrappers that only forward to `session.add` / `session.get`, inflate the surface
+area for review, and encourage copy-paste drift. At the same time, several aggregates
+need real domain queries (open cases, legal state transitions, idempotent action insert,
+hash-chained audit append, bandit posteriors) that do not belong on the ORM model or in
+route handlers.
+
+### Decision
+Provide a typed generic `BaseRepository[ModelT]` with `add`, `get`, `get_or_raise`,
+`list`, and `delete`. Add concrete repositories **only** for aggregates that need
+domain-specific queries or invariants: Case, Transaction, Decision, Action, Outcome,
+Audit, ContactLedger, BanditStats. All other models are accessed via `BaseRepository`
+directly.
+
+### Consequences
+- **Positive:** Domain invariants (idempotency, state machine, audit chaining) live in one
+  place and are unit-tested without HTTP.
+- **Positive:** mypy infers concrete model types from the generic base.
+- **Negative:** Call sites for simple tables must construct `BaseRepository(session, Model)`
+  instead of a named class — accepted as clearer than empty subclasses.
+- **Trade-off rejected:** One repository per table. Rejected because it adds boilerplate
+  without behaviour and obscures which repositories actually encode domain rules.
+
+### Alternatives Rejected
+- **Active Record methods on models:** Couples persistence to entity definitions and makes
+  the held-out / dependency-direction rules harder to enforce.
+- **Anemic DAO per table:** Noise without benefit for read-by-id tables.
+
+---
+
+## ADR-0010 — Architecture constraints enforced as executable tests
+
+**Date:** 2026-08-25
+**Status:** Accepted
+
+### Context
+Financial-safety rules in `AGENTS.md` (held-out environment, inward model dependencies,
+integer paise columns) are worthless if they only exist as prose. Documentation drifts;
+import bans are easy to violate accidentally as packages appear in later phases.
+
+### Decision
+Encode the constraints in `backend/tests/test_architecture.py` as pure AST checks over
+source text via `find_forbidden_imports` and mapped-column type scanning:
+
+1. Modules under `app.policy`, `app.decision`, `app.agent`, `app.ml` must not import
+   environment modules or reference `world_config`.
+2. `app.models` must not import `app.services`, `app.api`, or `app.repositories`.
+3. Model `mapped_column(...)` calls must not use `Float`, `Numeric`, or `Decimal`.
+
+A **positive** test walks the real `backend/app` tree and asserts zero violations.
+A **negative** test feeds synthetic source (`from app.core.environment import World` under
+`app.policy.kernel`) and asserts the violation **is** detected. The negative test exists
+because an architecture check that has never been observed to fail proves nothing — it may
+be a no-op that always returns an empty list.
+
+### Consequences
+- Regressions fail CI even before the held-out environment package exists.
+- Refactors that reintroduce float money or circular imports are caught locally with
+  `pytest`.
+- Authors must keep the AST helpers honest; the inverted assertion in the negative test
+  documents that failure polarity was verified.
+
+### Alternatives Rejected
+- **Documentation-only bans:** Drift and silent violations.
+- **Import-linter config alone:** Useful later; AST tests work before packages exist and
+  cover `world_config` string references and `mapped_column` type names in one place.

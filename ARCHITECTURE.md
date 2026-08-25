@@ -1,7 +1,8 @@
 # ARCHITECTURE.md — RevivePay AI Architecture of Record
 
-**Last updated:** Phase 0 — Repository scaffold  
-**Status:** Target architecture documented. No business logic implemented yet.
+**Last updated:** Phase 2 — Models, repositories, schemas, architecture tests  
+**Status:** Domain ORM, repository layer, and Pydantic schemas are implemented.
+Decision-pipeline / held-out environment modules are not yet implemented.
 
 ---
 
@@ -246,6 +247,45 @@ stateDiagram-v2
 
 **Legal Transitions Only.** The policy kernel rejects any state transition not listed above.
 `STOPPED` is triggered by operator action only (kill-switch or manual API call).
+`CaseRepository.transition_state` enforces the same legal graph at the persistence boundary.
+
+---
+
+## Persistence layer (repositories)
+
+SQLAlchemy session/engine setup lives in `backend/app/db.py` (`Base`, engine factory,
+`get_session_factory`, FastAPI `get_db`). Domain code talks to the database through
+`backend/app/repositories/`:
+
+| Module | Responsibility |
+|---|---|
+| `base.py` | Generic `BaseRepository[ModelT]` — `add`, `get`, `get_or_raise`, `list`, `delete` |
+| `cases.py` | Open-case queries and legal `transition_state` |
+| `transactions.py` | Failed-since / by-merchant lookups |
+| `decisions.py` | Latest / list decisions for a case |
+| `actions.py` | `create_idempotent` (UNIQUE key; no SELECT-then-insert) |
+| `outcomes.py` | Record / get-by-action |
+| `audit.py` | Gapless seq + hash-chained `append` using `models.audit.compute_audit_hash` |
+| `contact_ledger.py` | Contact counts and recording |
+| `bandit_stats.py` | Get-or-create cells and posterior updates |
+
+Other tables use `BaseRepository` directly — no one-repo-per-table boilerplate (ADR-0009).
+
+### Dependency direction
+
+Dependencies point **inward** toward the domain models:
+
+```
+api / services / core  →  repositories  →  models
+                              ↑
+                         schemas (DTO)
+```
+
+- `app.models.*` must not import `app.repositories`, `app.services`, or `app.api`.
+- Held-out environment modules must never be imported by decision/policy/agent/ml code
+  (enforced by `tests/test_architecture.py` — ADR-0010).
+- Monetary ORM columns must not use `Float` / `Numeric` / `Decimal` inside
+  `mapped_column(...)` (same architecture test).
 
 ---
 
@@ -257,11 +297,12 @@ revivepay-ai/
 │   ├── app/
 │   │   ├── main.py               FastAPI application entry point
 │   │   ├── config.py             pydantic-settings config object
-│   │   ├── db.py                 SQLAlchemy async engine + session factory
+│   │   ├── db.py                 SQLAlchemy engine + session factory + get_db
 │   │   ├── models/               ORM entity definitions (SQLAlchemy)
 │   │   ├── schemas/              Pydantic v2 API and LLM contract schemas
-│   │   ├── api/                  FastAPI route modules and dependencies
-│   │   └── core/
+│   │   ├── repositories/         Typed persistence adapters (selective concretes)
+│   │   ├── api/                  FastAPI route modules and dependencies (later)
+│   │   └── core/                 Decision pipeline (later phases)
 │   │       ├── detection.py      Revenue-at-risk event detection
 │   │       ├── features.py       Deterministic feature builder
 │   │       ├── risk_model.py     Calibrated recovery-probability model
@@ -292,7 +333,7 @@ revivepay-ai/
 │   ├── data/
 │   │   ├── generate_dataset.py   Synthetic dataset generator
 │   │   └── seed.py               Database seeder
-│   └── tests/                    pytest test suite
+│   └── tests/                    pytest test suite (incl. test_architecture.py)
 ├── frontend/
 │   └── src/
 │       ├── app/                  Next.js 15 App Router pages
@@ -398,15 +439,16 @@ advanced in lockstep, so environmental variance across strategies is exactly zer
 
 ---
 
-## What Does Not Exist Yet (Phase 0)
+## What Remains (post Phase 2)
 
-Phase 0 creates only the scaffold: directory structure, documentation, and config files.
-The following are **not implemented** and will be built in phases 1–17:
-- ORM models (`backend/app/models/`)
-- Pydantic schemas (`backend/app/schemas/`)
-- FastAPI routes (`backend/app/api/`)
-- All `core/` modules
+Implemented through Phase 2: ORM models, Pydantic schemas, repository layer, FastAPI
+system endpoints, and executable architecture tests.
+
+Still to build in later phases:
+- FastAPI domain routes (`backend/app/api/`)
+- All `core/` decision-pipeline modules
+- Held-out environment + `world_config.yaml`
 - Synthetic data generation
-- Frontend pages and components
+- Frontend product pages
 - ML training pipeline
 - Evaluation runner

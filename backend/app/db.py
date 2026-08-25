@@ -2,13 +2,13 @@
 app/db.py — SQLAlchemy 2.0 synchronous engine, session factory, and FastAPI dependency.
 
 Design notes:
-- Synchronous engine is used in Phase 1 (health/version/config only).
-  Async migration (aiosqlite + AsyncSession) is planned for Phase 2 when
-  domain endpoints with real IO appear. See ADR-0009 in DECISIONS.md.
+- Synchronous engine is used for the current API surface (health/version/config and
+  repositories). Async migration (aiosqlite + AsyncSession) may be reconsidered when
+  domain endpoints with concurrent IO appear.
 - All SQLite pragmas are applied via an event listener on connect — they are
   functionally equivalent on PostgreSQL (WAL is the default, foreign_keys
   is a no-op, busy_timeout maps to lock_timeout). No raw SQL outside this file.
-- No ORM entities are defined here. Phase 2 will add them in app/models/.
+- ORM entities subclass ``Base`` defined here; see ``app.models``.
 """
 
 from __future__ import annotations
