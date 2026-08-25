@@ -143,3 +143,82 @@ def test_negative_held_out_check_fails_when_inverted() -> None:
     # assert len(violations) == 0  # would fail — confirmed below via pytest.raises path
     with pytest.raises(AssertionError):
         assert len(violations) == 0
+
+
+# ---------------------------------------------------------------------------
+# Decision-side boundary: app.economics and app.config must not import app.sim
+# ---------------------------------------------------------------------------
+
+_DECISION_SIDE_PREFIXES = ("app.economics", "app.config")
+
+
+def _imports_app_sim(source: str) -> list[str]:
+    """Return a list of ``app.sim``-prefixed names imported by *source*."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []
+    found: list[str] = []
+    for node in ast.walk(tree):
+        imported: list[str] = []
+        if isinstance(node, ast.Import):
+            imported = [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported = [node.module]
+        for name in imported:
+            if name == "app.sim" or name.startswith("app.sim."):
+                found.append(name)
+    return found
+
+
+def test_economics_modules_do_not_import_app_sim() -> None:
+    """Positive test: walk app/economics/ and assert no module imports app.sim.
+
+    app.economics.* is decision-side code that must never cross the held-out
+    boundary.  Any import of app.sim from within app/economics/ would expose
+    ground-truth parameters to the decision pipeline.
+    """
+    violations: list[str] = []
+    economics_root = APP_ROOT / "economics"
+    for path in sorted(economics_root.rglob("*.py")):
+        source = path.read_text(encoding="utf-8")
+        module_name = _path_to_module(path)
+        for name in _imports_app_sim(source):
+            violations.append(
+                f"{module_name}: forbidden import of '{name}' (app.sim is held-out)"
+            )
+    assert violations == [], (
+        "app.economics must not import app.sim:\n" + "\n".join(violations)
+    )
+
+
+def test_config_modules_do_not_import_app_sim() -> None:
+    """Positive test: walk app/config/ and assert no module imports app.sim.
+
+    app.config.* holds observable business parameters readable by any layer.
+    An import of app.sim from within app/config/ would violate the held-out
+    boundary and potentially allow ground-truth parameters to leak into
+    observable configuration.
+    """
+    violations: list[str] = []
+    config_root = APP_ROOT / "config"
+    for path in sorted(config_root.rglob("*.py")):
+        source = path.read_text(encoding="utf-8")
+        module_name = _path_to_module(path)
+        for name in _imports_app_sim(source):
+            violations.append(
+                f"{module_name}: forbidden import of '{name}' (app.sim is held-out)"
+            )
+    assert violations == [], (
+        "app.config must not import app.sim:\n" + "\n".join(violations)
+    )
+
+
+def test_decision_side_boundary_detects_violation() -> None:
+    """Negative test: a synthetic app.sim import in decision-side code must
+    be detected by _imports_app_sim.  Confirms the enforcement mechanism is live.
+    """
+    source = "from app.sim.environment import World\n"
+    found = _imports_app_sim(source)
+    assert found, "expected _imports_app_sim to detect the violation"
+    assert "app.sim.environment" in found
