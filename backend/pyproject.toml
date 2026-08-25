@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "revivepay-ai-backend"
 version = "0.1.0"
 description = "RevivePay AI — autonomous revenue-recovery control plane"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.111.0",
     "uvicorn[standard]>=0.29.0",
@@ -42,7 +42,7 @@ include = ["app*"]
 # ---------------------------------------------------------------------------
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 src = ["app", "tests"]
 
 [tool.ruff.lint]
@@ -59,6 +59,7 @@ select = [
 ignore = [
     "E501",  # line too long — handled by formatter
     "B008",  # do not perform function calls in default arguments (FastAPI Depends)
+    "UP046", # Generic[T] subclass style — PEP 695 syntax migration is out of scope
 ]
 
 [tool.ruff.lint.isort]
@@ -72,7 +73,7 @@ indent-style = "space"
 # Mypy — strict type checking for app/ and tests/
 # ---------------------------------------------------------------------------
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 warn_unused_ignores = true
 disallow_untyped_defs = true
 strict = true

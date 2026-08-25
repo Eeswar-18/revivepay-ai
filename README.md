@@ -103,7 +103,7 @@ and personal-data handling policy.
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - Node.js 20+
 - `make`
 

@@ -50,7 +50,7 @@ with bootstrap confidence intervals.
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| Backend language | Python 3.11+ | Ecosystem for ML, async IO, type safety |
+| Backend language | Python 3.12+ | Ecosystem for ML, async IO, type safety |
 | API framework | FastAPI | Async, Pydantic-native, OpenAPI auto-docs |
 | ORM | SQLAlchemy 2.0 (async) | Database-agnostic; portable to Postgres |
 | Schema validation | Pydantic v2 | Performance, strict types, JSON-schema generation |
