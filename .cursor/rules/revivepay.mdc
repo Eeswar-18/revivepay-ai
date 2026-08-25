@@ -1,0 +1,20 @@
+---
+description: RevivePay AI standing engineering contract
+alwaysApply: true
+---
+
+This repository is built in numbered phases. Before writing any code you MUST read, in this order:
+1. AGENTS.md — the binding operating contract and the financial-safety invariants. Obey it exactly.
+2. ARCHITECTURE.md — the architecture of record.
+3. STATUS.md — the current phase, what is done, what is broken, and the next action.
+
+Hard rules:
+- Do not invent the phase plan. Only do the phase you are explicitly asked to do.
+- Never delete, skip, xfail or weaken an existing test to make your change pass.
+- No TODO comments, no stubs, no NotImplementedError, no placeholder return values.
+- Never hard-code an evaluation metric. Metrics are computed from real run output only.
+- An LLM output must never reach a payment execution path without passing schema validation, invariant checks and the deterministic policy kernel.
+- Money is always an integer number of paise. No float or Decimal currency anywhere.
+- No module under core/features, core/risk_model, core/econ, core/llm or core/policy may import core/environment.
+- Secrets come from environment variables only. Never commit or log a key.
+- When you finish a task, update STATUS.md and run scripts/verify.ps1 until it is green.

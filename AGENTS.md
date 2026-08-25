@@ -7,6 +7,8 @@ This file is the permanent operating contract for all engineering work on this r
 
 ## How to Work
 
+Read STATUS.md before starting any work, and update STATUS.md before reporting a task complete.
+
 ### Repository-first discipline
 - **Inspect before you write.** Before creating or editing any file, run a recursive listing
   of the relevant directories and read any existing module, type, component or utility that
