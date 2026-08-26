@@ -12,7 +12,9 @@ import uuid
 class NotFoundError(Exception):
     """The requested entity does not exist."""
 
-    def __init__(self, message: str, *, entity: str | None = None, entity_id: object = None) -> None:
+    def __init__(
+        self, message: str, *, entity: str | None = None, entity_id: object = None
+    ) -> None:
         super().__init__(message)
         self.entity = entity
         self.entity_id = entity_id

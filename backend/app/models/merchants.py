@@ -24,7 +24,12 @@ class Merchant(Base):
     currency: Mapped[str] = mapped_column(String(3), default="INR")
     risk_appetite: Mapped[str] = mapped_column(String(50))  # conservative|balanced|aggressive
     max_retries_default: Mapped[int] = mapped_column(default=3)
-    contact_budget_per_week: Mapped[int] = mapped_column(BigInteger)  # minor units
+    # COUNT of customer contacts permitted per rolling 7-day window — NOT money.
+    # This field has no *_minor suffix precisely because it is not a monetary
+    # amount; do not treat it as paise. Rule R006 (contact budget) compares it
+    # against a count of ContactLedgerEntry rows. An earlier comment here read
+    # "minor units", which would have invited a 100x error in that comparison.
+    contact_budget_per_week: Mapped[int] = mapped_column(BigInteger)
     mdr_bps: Mapped[int] = mapped_column()
     autonomous_amount_ceiling_minor: Mapped[int] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

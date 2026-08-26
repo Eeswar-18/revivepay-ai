@@ -62,8 +62,21 @@ class Settings(BaseSettings):
 
     # ── Policy and Config Files ───────────────────────────────────────────────
     POLICY_FILE: str = "app/core/policy/policy.yaml"
-    WORLD_CONFIG_FILE: str = "app/core/environment/world_config.yaml"
-    ECON_CONFIG_FILE: str = "app/core/policy/econ_config.yaml"
+    ECON_CONFIG_FILE: str = "app/config/economics.yaml"
+
+    # NOTE: there is deliberately NO WORLD_CONFIG_FILE setting.
+    #
+    # An earlier version exposed one, defaulting to the stale path
+    # "app/core/environment/world_config.yaml" (the file actually lives at
+    # app/sim/world_config.yaml). It was never read by any code, but it was a
+    # boundary hazard on two counts: it is a decision-side, env-overridable
+    # pointer at held-out ground truth, and a configurable path would let
+    # anyone repoint the "pre-registered" world at a different file — which
+    # would silently destroy the hash pre-registration claim that the whole
+    # evaluation rests on.
+    #
+    # app.sim.environment resolves its config relative to its own __file__
+    # instead. That path is not configurable, by design.
 
     # ── Simulation and Evaluation ─────────────────────────────────────────────
     SIM_DEFAULT_SEED: int = 42

@@ -1,1 +1,21 @@
+# Normalise text files to LF in the repository.
+#
+# This matters more than usual here: the held-out world configuration is
+# pre-registered by a sha256 computed over NEWLINE-NORMALISED text, so a
+# Windows checkout and a Linux CI runner must agree on file content.
 *.yaml text eol=lf
+*.yml  text eol=lf
+
+# WORLD_CONFIG_HASH.txt records that pre-registered hash. Left unprotected it
+# was rewritten with CRLF by a Windows tool and then showed as permanently
+# modified in `git status` even though the 64-character hash value was
+# byte-identical. That makes "the held-out config is untouched" impossible to
+# assert cleanly, which is exactly the claim the evaluation depends on.
+*.txt  text eol=lf
+
+# Source and docs, for the same cross-platform reason.
+*.py   text eol=lf
+*.md   text eol=lf
+*.toml text eol=lf
+*.cfg  text eol=lf
+*.json text eol=lf

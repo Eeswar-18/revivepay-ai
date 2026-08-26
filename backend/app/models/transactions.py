@@ -34,6 +34,11 @@ class Transaction(Base):
     currency: Mapped[str] = mapped_column(String(3))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     payment_method: Mapped[str] = mapped_column(String(50))  # card|upi|netbanking|wallet|emandate
+    # Payment rail, one of app.models.enums.Rail (RAIL_A|RAIL_B|RAIL_UPI|RAIL_NETBANKING).
+    # Distinct from payment_method: card traffic splits across RAIL_A and RAIL_B, and
+    # without that split ActionType.RETRY_ALTERNATE_RAIL would be meaningless for the
+    # largest slice of volume. Rail-specific downtime windows are keyed by these ids.
+    rail: Mapped[str] = mapped_column(String(50))
     card_network: Mapped[str | None] = mapped_column(String(50), nullable=True)
     issuer_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     status: Mapped[str] = mapped_column(

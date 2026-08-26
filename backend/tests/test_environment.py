@@ -97,16 +97,13 @@ def test_all_combinations_within_clamp_range(world: World) -> None:
     clamp_min = 0.001
     clamp_max = 0.94
 
-    for fc, iv, db in itertools.product(
-        _ALL_FAILURE_CLASSES, _ALL_INTERVENTIONS, _ALL_DELAY_BANDS
-    ):
+    for fc, iv, db in itertools.product(_ALL_FAILURE_CLASSES, _ALL_INTERVENTIONS, _ALL_DELAY_BANDS):
         ctx = _ctx(failure_class=fc)
         p = world.true_success_probability(ctx, iv, db)
 
         if iv == "STOP":
             assert p == 0.0, (
-                f"STOP must return exactly 0.0; got {p} "
-                f"for failure_class={fc!r} delay_band={db!r}"
+                f"STOP must return exactly 0.0; got {p} for failure_class={fc!r} delay_band={db!r}"
             )
         else:
             assert clamp_min <= p <= clamp_max, (
@@ -131,8 +128,7 @@ def test_hard_decline_retry_below_threshold(world: World) -> None:
         ctx = _ctx(failure_class="HARD_DECLINE")
         p = world.true_success_probability(ctx, iv, db)
         assert p < 0.02, (
-            f"HARD_DECLINE retry probability {p} >= 0.02 "
-            f"for intervention={iv!r} delay_band={db!r}"
+            f"HARD_DECLINE retry probability {p} >= 0.02 for intervention={iv!r} delay_band={db!r}"
         )
 
 
@@ -170,9 +166,7 @@ def test_card_expired_request_new_instrument_long_recoverable(world: World) -> N
     """
     ctx = _ctx(failure_class="CARD_EXPIRED")
     p = world.true_success_probability(ctx, "REQUEST_NEW_INSTRUMENT", "LONG")
-    assert p > 0.20, (
-        f"CARD_EXPIRED/REQUEST_NEW_INSTRUMENT/LONG should exceed 0.20; got {p}"
-    )
+    assert p > 0.20, f"CARD_EXPIRED/REQUEST_NEW_INSTRUMENT/LONG should exceed 0.20; got {p}"
 
 
 # ---------------------------------------------------------------------------
@@ -195,8 +189,7 @@ def test_attempt_decay_reduces_probability(world: World) -> None:
         p1 = world.true_success_probability(_ctx(failure_class=fc, attempt_index=1), iv, db)
         p5 = world.true_success_probability(_ctx(failure_class=fc, attempt_index=5), iv, db)
         assert p5 < p1, (
-            f"attempt_index=5 ({p5}) should be < attempt_index=1 ({p1}) "
-            f"for {fc}/{iv}/{db}"
+            f"attempt_index=5 ({p5}) should be < attempt_index=1 ({p1}) for {fc}/{iv}/{db}"
         )
 
 
@@ -331,10 +324,7 @@ def test_sample_outcome_reproducibility(world: World) -> None:
 
     def draw_sequence(seed: int) -> list[SampledOutcome]:
         rng = np.random.default_rng(seed)
-        return [
-            world.sample_outcome(ctx, intervention, delay_band, rng)
-            for _ in range(n)
-        ]
+        return [world.sample_outcome(ctx, intervention, delay_band, rng) for _ in range(n)]
 
     seq_7a = draw_sequence(7)
     seq_7b = draw_sequence(7)

@@ -23,9 +23,13 @@ class ContactLedgerRepository(BaseRepository[ContactLedgerEntry]):
 
     def count_contacts(self, customer_id: uuid.UUID, since: datetime) -> int:
         """Return how many contacts were sent to ``customer_id`` since ``since``."""
-        stmt = select(func.count()).select_from(ContactLedgerEntry).where(
-            ContactLedgerEntry.customer_id == customer_id,
-            ContactLedgerEntry.sent_at >= since,
+        stmt = (
+            select(func.count())
+            .select_from(ContactLedgerEntry)
+            .where(
+                ContactLedgerEntry.customer_id == customer_id,
+                ContactLedgerEntry.sent_at >= since,
+            )
         )
         return int(self._session.scalar(stmt) or 0)
 

@@ -18,10 +18,10 @@ from __future__ import annotations
 # These mirror the amount_bands keys in world_config.yaml and represent
 # observable business facts, not held-out ground truth.
 # ---------------------------------------------------------------------------
-_MICRO_MAX: int = 10_000      # up to and including Rs 100 (10 000 paise)
-_SMALL_MAX: int = 100_000     # up to and including Rs 1 000
+_MICRO_MAX: int = 10_000  # up to and including Rs 100 (10 000 paise)
+_SMALL_MAX: int = 100_000  # up to and including Rs 1 000
 _MEDIUM_MAX: int = 1_000_000  # up to and including Rs 10 000
-_LARGE_MAX: int = 5_000_000   # up to and including Rs 50 000
+_LARGE_MAX: int = 5_000_000  # up to and including Rs 50 000
 # XLARGE: anything strictly above _LARGE_MAX
 
 
@@ -46,9 +46,7 @@ def amount_band_for(amount_minor: int) -> str:
         If *amount_minor* is negative.
     """
     if amount_minor < 0:
-        raise ValueError(
-            f"amount_minor must be non-negative; got {amount_minor}"
-        )
+        raise ValueError(f"amount_minor must be non-negative; got {amount_minor}")
     if amount_minor <= _MICRO_MAX:
         return "MICRO"
     if amount_minor <= _SMALL_MAX:

@@ -12,11 +12,15 @@ from app.models.decisions import Decision
 from app.models.enums import (
     ActionStatus,
     ActionType,
+    AmountBand,
     CaseState,
     CaseType,
+    CustomerSegment,
+    DelayBand,
     FailureClass,
     OutcomeStatus,
     PolicyVerdict,
+    Rail,
 )
 from app.models.events import Event
 from app.models.merchants import Merchant
@@ -45,6 +49,10 @@ __all__ = [
     "ActionType",
     "CaseType",
     "FailureClass",
+    "DelayBand",
+    "CustomerSegment",
+    "AmountBand",
+    "Rail",
     "PolicyVerdict",
     "ActionStatus",
     "OutcomeStatus",

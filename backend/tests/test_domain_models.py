@@ -44,6 +44,7 @@ def _seed_merchant_and_customer(session: Session) -> tuple[Merchant, Customer]:
         email_hash="a" * 64,
         phone_hash="b" * 64,
         region="IN-KA",
+        segment="OCCASIONAL",
         lifetime_txn_count=5,
         lifetime_success_rate=0.8,
         prior_recovery_successes=1,
@@ -127,14 +128,14 @@ def test_case_relationships(test_engine):
             feature_version="v1",
             risk_model_version="rm-v1",
             p_calibrated=0.72,
-            candidate_scores_json={"RETRY_NOW": 1200},
+            candidate_scores_json={"RETRY_SAME_RAIL": 1200},
             llm_provider="mock",
             llm_model="mock-v1",
             prompt_version="p1",
             prompt_hash="c" * 64,
-            raw_llm_output='{"action":"RETRY_NOW"}',
+            raw_llm_output='{"action":"RETRY_SAME_RAIL"}',
             proposal_json={
-                "action_type": ActionType.RETRY_NOW,
+                "action_type": ActionType.RETRY_SAME_RAIL,
                 "schedule_offset_hours": 24,
                 "justification": "High probability of recovery on second attempt",
                 "feature_citations": {"failure_count": 1},
@@ -147,7 +148,7 @@ def test_case_relationships(test_engine):
             policy_verdict=PolicyVerdict.APPROVE,
             applied_rules_json={"rule_name": "allow_single_retry"},
             violated_rules_json={},
-            chosen_action=ActionType.RETRY_NOW,
+            chosen_action=ActionType.RETRY_SAME_RAIL,
             chosen_params_json={"schedule_offset_hours": 24},
             expected_net_value_minor=1200,
             decision_latency_ms=15,
@@ -161,7 +162,7 @@ def test_case_relationships(test_engine):
             case_id=case.id,
             decision_id=decision.id,
             idempotency_key=str(uuid.uuid4()),
-            action_type=ActionType.RETRY_NOW,
+            action_type=ActionType.RETRY_SAME_RAIL,
             params_json={"schedule_offset_hours": 24},
             adapter="simulated",
             state=ActionStatus.PENDING,
@@ -203,14 +204,14 @@ def test_case_relationships(test_engine):
         stored_decision = decisions[0]
         # Former Proposal properties (must not shrink coverage)
         assert stored_decision.proposal_json is not None
-        assert stored_decision.proposal_json["action_type"] == ActionType.RETRY_NOW
+        assert stored_decision.proposal_json["action_type"] == ActionType.RETRY_SAME_RAIL
         assert stored_decision.proposal_json["schedule_offset_hours"] == 24
         assert (
             stored_decision.proposal_json["justification"]
             == "High probability of recovery on second attempt"
         )
         assert stored_decision.proposal_json["feature_citations"] == {"failure_count": 1}
-        assert stored_decision.chosen_action == ActionType.RETRY_NOW
+        assert stored_decision.chosen_action == ActionType.RETRY_SAME_RAIL
         # Former PolicyVerdictRecord properties (must not shrink coverage)
         assert stored_decision.policy_verdict == PolicyVerdict.APPROVE
         assert stored_decision.applied_rules_json["rule_name"] == "allow_single_retry"

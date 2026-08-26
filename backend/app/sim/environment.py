@@ -126,9 +126,7 @@ class World:
     """
 
     def __init__(self, config_path: Path) -> None:
-        raw: dict[str, Any] = yaml.safe_load(
-            config_path.read_text(encoding="utf-8")
-        )
+        raw: dict[str, Any] = yaml.safe_load(config_path.read_text(encoding="utf-8"))
         self._cfg: dict[str, Any] = raw
         self.config_version: str = str(raw["config_version"])
 
@@ -141,9 +139,7 @@ class World:
         self._attempt_decay: dict[str, float] = {
             str(k): float(v) for k, v in raw["attempt_decay"].items()
         }
-        self._risk_penalty: float = float(
-            raw["risk_decline_retry_penalty_per_attempt"]
-        )
+        self._risk_penalty: float = float(raw["risk_decline_retry_penalty_per_attempt"])
         self._segments: dict[str, Any] = raw["customer_segments"]
         self._amount_bands: dict[str, Any] = raw["amount_bands"]
         self._churn_hazard: dict[str, float] = {
@@ -151,20 +147,15 @@ class World:
         }
         self._quiet_hours: dict[str, Any] = raw["quiet_hours"]
         self._hour_multiplier: dict[int, float] = {
-            int(k): float(v)
-            for k, v in raw["hour_of_day_response_multiplier"].items()
+            int(k): float(v) for k, v in raw["hour_of_day_response_multiplier"].items()
         }
         self._clamp_min: float = float(raw["probability_clamp"]["min"])
         self._clamp_max: float = float(raw["probability_clamp"]["max"])
         self._patience_range: list[float] = [
             float(x)
-            for x in raw["observation"]["latent_customer_patience"][
-                "success_multiplier_range"
-            ]
+            for x in raw["observation"]["latent_customer_patience"]["success_multiplier_range"]
         ]
-        self._downtime_windows: list[dict[str, Any]] = raw.get(
-            "downtime_windows", []
-        )
+        self._downtime_windows: list[dict[str, Any]] = raw.get("downtime_windows", [])
 
     @classmethod
     def default(cls) -> World:
@@ -178,44 +169,34 @@ class World:
     def _get_failure_class(self, name: str) -> dict[str, Any]:
         if name not in self._failure_classes:
             raise KeyError(
-                f"Unknown failure_class {name!r}. "
-                f"Valid keys: {sorted(self._failure_classes)}"
+                f"Unknown failure_class {name!r}. Valid keys: {sorted(self._failure_classes)}"
             )
         return self._failure_classes[name]  # type: ignore[no-any-return]
 
     def _get_intervention(self, name: str) -> dict[str, Any]:
         if name not in self._interventions:
             raise KeyError(
-                f"Unknown intervention {name!r}. "
-                f"Valid keys: {sorted(self._interventions)}"
+                f"Unknown intervention {name!r}. Valid keys: {sorted(self._interventions)}"
             )
         return self._interventions[name]  # type: ignore[no-any-return]
 
     def _get_segment(self, name: str) -> dict[str, Any]:
         if name not in self._segments:
             raise KeyError(
-                f"Unknown customer_segment {name!r}. "
-                f"Valid keys: {sorted(self._segments)}"
+                f"Unknown customer_segment {name!r}. Valid keys: {sorted(self._segments)}"
             )
         return self._segments[name]  # type: ignore[no-any-return]
 
     def _get_delay_band(self, name: str) -> dict[str, Any]:
         if name not in self._delay_bands:
-            raise KeyError(
-                f"Unknown delay_band {name!r}. "
-                f"Valid keys: {sorted(self._delay_bands)}"
-            )
+            raise KeyError(f"Unknown delay_band {name!r}. Valid keys: {sorted(self._delay_bands)}")
         return self._delay_bands[name]  # type: ignore[no-any-return]
 
-    def _get_multiplier(
-        self, failure_class: str, intervention: str, delay_band: str
-    ) -> float:
+    def _get_multiplier(self, failure_class: str, intervention: str, delay_band: str) -> float:
         try:
             fc_mult = self._multipliers[failure_class]
         except KeyError as exc:
-            raise KeyError(
-                f"No multiplier table for failure_class {failure_class!r}"
-            ) from exc
+            raise KeyError(f"No multiplier table for failure_class {failure_class!r}") from exc
         try:
             iv_mult = fc_mult[intervention]
         except KeyError as exc:
@@ -236,11 +217,7 @@ class World:
         return self._attempt_decay[key]
 
     def _churn_hazard_for_index(self, contact_index: int) -> float:
-        key = (
-            str(contact_index)
-            if str(contact_index) in self._churn_hazard
-            else "default_beyond"
-        )
+        key = str(contact_index) if str(contact_index) in self._churn_hazard else "default_beyond"
         return self._churn_hazard[key]
 
     # ------------------------------------------------------------------
@@ -290,9 +267,7 @@ class World:
         self._get_delay_band(delay_band)
 
         # Step 2 — base retry success for this failure class.
-        p: float = float(
-            self._failure_classes[ctx.failure_class]["base_retry_success"]
-        )
+        p: float = float(self._failure_classes[ctx.failure_class]["base_retry_success"])
 
         # Step 3 — multiply by the (failure_class × intervention × delay_band) cell.
         p *= self._get_multiplier(ctx.failure_class, intervention, delay_band)

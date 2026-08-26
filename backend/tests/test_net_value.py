@@ -79,15 +79,13 @@ def test_stop_is_argmax_hard_decline_micro_transaction() -> None:
         customer_segment=segment,
         contact_index=ci,
     )
-    assert stop_result.net_ev_minor == 0, (
-        f"STOP must be exactly 0; got {stop_result.net_ev_minor}"
-    )
+    assert stop_result.net_ev_minor == 0, f"STOP must be exactly 0; got {stop_result.net_ev_minor}"
 
     p_floor = 0.001  # world probability_clamp.min — correct value for HARD_DECLINE
     expected = {
         "RETRY_SAME_RAIL": -295,
-        "RETRY_ALTERNATE_RAIL": round(0.001 * 4900 * 0.98 - 450),   # round(-445.198) = -445
-        "EMAIL_NUDGE": round(0.001 * 4900 * 0.98 - 2 - 0.002 * 1.0 * 650_000),   # -1317
+        "RETRY_ALTERNATE_RAIL": round(0.001 * 4900 * 0.98 - 450),  # round(-445.198) = -445
+        "EMAIL_NUDGE": round(0.001 * 4900 * 0.98 - 2 - 0.002 * 1.0 * 650_000),  # -1317
         "SMS_NUDGE": -1315,
         "WHATSAPP_NUDGE": round(0.001 * 4900 * 0.98 - 12 - 0.002 * 1.0 * 650_000),  # -1307
         "REQUEST_NEW_INSTRUMENT": round(0.001 * 4900 * 0.98 - 20 - 0.002 * 1.0 * 650_000),  # -1315
@@ -184,6 +182,7 @@ def test_stop_requires_zero_p_success() -> None:
     with pytest.raises(ValueError, match="STOP"):
         net_expected_value(0.22, 4900, "STOP", "OCCASIONAL", 1)
 
+
 # ---------------------------------------------------------------------------
 # Test 2 — Inverse: large amount, AGENT_CALL pays for itself.
 #
@@ -236,7 +235,7 @@ def test_net_ev_rises_with_p_success() -> None:
     non-STOP intervention, all else equal.  STOP is excluded because it
     requires p_success=0.0 by contract.
     """
-    amount_minor = 500_000   # ₹5,000
+    amount_minor = 500_000  # ₹5,000
     segment = "OCCASIONAL"
     ci = 1
 
@@ -283,12 +282,9 @@ def test_net_ev_falls_as_contact_index_rises_for_contacting_interventions() -> N
     # Non-contacting (excl. STOP): contact_index has zero effect.
     for iv in ("RETRY_SAME_RAIL", "RETRY_ALTERNATE_RAIL"):
         results = [
-            net_expected_value(p, amount_minor, iv, segment, ci).net_ev_minor
-            for ci in range(1, 6)
+            net_expected_value(p, amount_minor, iv, segment, ci).net_ev_minor for ci in range(1, 6)
         ]
-        assert len(set(results)) == 1, (
-            f"{iv} should be unaffected by contact_index; got {results}"
-        )
+        assert len(set(results)) == 1, f"{iv} should be unaffected by contact_index; got {results}"
 
 
 # ---------------------------------------------------------------------------
@@ -314,15 +310,13 @@ def test_churn_cost_zero_for_non_contacting_interventions() -> None:
     for iv in ("RETRY_SAME_RAIL", "RETRY_ALTERNATE_RAIL"):
         r = net_expected_value(0.20, amount_minor, iv, "HIGH_VALUE", 5)
         assert r.expected_churn_cost_minor == 0.0, (
-            f"{iv} is non-contacting; expected churn cost 0.0, got "
-            f"{r.expected_churn_cost_minor}"
+            f"{iv} is non-contacting; expected churn cost 0.0, got {r.expected_churn_cost_minor}"
         )
 
     for iv in _CONTACTING:
         r = net_expected_value(0.20, amount_minor, iv, "OCCASIONAL", 1)
         assert r.expected_churn_cost_minor > 0.0, (
-            f"{iv} is contacting; expected churn cost > 0, got "
-            f"{r.expected_churn_cost_minor}"
+            f"{iv} is contacting; expected churn cost > 0, got {r.expected_churn_cost_minor}"
         )
 
 

@@ -25,6 +25,16 @@ class Customer(Base):
     email_hash: Mapped[str] = mapped_column(String(64))
     phone_hash: Mapped[str] = mapped_column(String(64))
     region: Mapped[str] = mapped_column(String(50))
+    # Behavioural/value segment, one of app.models.enums.CustomerSegment
+    # (NEW|OCCASIONAL|LOYAL|HIGH_VALUE). OBSERVABLE by decision-side code:
+    # the label, its lifetime value and its churn sensitivity are mirrored in
+    # app/config/economics.yaml. Required to build sim.environment.ActionContext.
+    #
+    # NOTE: there is deliberately NO patience column here or anywhere else.
+    # Latent customer patience is held-out world truth and must remain
+    # physically unreachable from the ORM, so no decision-side model can
+    # accidentally train on it.
+    segment: Mapped[str] = mapped_column(String(50))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     lifetime_txn_count: Mapped[int] = mapped_column(default=0)
     lifetime_success_rate: Mapped[float] = mapped_column()

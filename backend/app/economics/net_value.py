@@ -54,8 +54,7 @@ _MDR_BPS: int = int(_CFG["mdr_bps"])
 _INTERVENTIONS: dict[str, Any] = _CFG["interventions"]
 _SEGMENTS: dict[str, Any] = _CFG["customer_segments"]
 _CHURN_HAZARD: dict[str, float] = {
-    str(k): float(v)
-    for k, v in _CFG["estimated_churn_hazard_by_contact_index"].items()
+    str(k): float(v) for k, v in _CFG["estimated_churn_hazard_by_contact_index"].items()
 }
 
 
@@ -149,13 +148,11 @@ def net_expected_value(
     """
     if intervention not in _INTERVENTIONS:
         raise KeyError(
-            f"Unknown intervention {intervention!r}. "
-            f"Valid keys: {sorted(_INTERVENTIONS)}"
+            f"Unknown intervention {intervention!r}. Valid keys: {sorted(_INTERVENTIONS)}"
         )
     if customer_segment not in _SEGMENTS:
         raise KeyError(
-            f"Unknown customer_segment {customer_segment!r}. "
-            f"Valid keys: {sorted(_SEGMENTS)}"
+            f"Unknown customer_segment {customer_segment!r}. Valid keys: {sorted(_SEGMENTS)}"
         )
 
     # STOP has zero recovery probability by definition — doing nothing recovers

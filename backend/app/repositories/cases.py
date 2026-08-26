@@ -36,7 +36,9 @@ _ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     CaseState.APPROVED: frozenset({CaseState.SCHEDULED, CaseState.BLOCKED, CaseState.STOPPED}),
     CaseState.ESCALATED: frozenset({CaseState.APPROVED, CaseState.BLOCKED, CaseState.STOPPED}),
     CaseState.SCHEDULED: frozenset({CaseState.EXECUTING, CaseState.STOPPED}),
-    CaseState.EXECUTING: frozenset({CaseState.AWAITING_OUTCOME, CaseState.FAILED, CaseState.STOPPED}),
+    CaseState.EXECUTING: frozenset(
+        {CaseState.AWAITING_OUTCOME, CaseState.FAILED, CaseState.STOPPED}
+    ),
     CaseState.AWAITING_OUTCOME: frozenset(
         {CaseState.RECOVERED, CaseState.FAILED, CaseState.EXPIRED, CaseState.STOPPED}
     ),
