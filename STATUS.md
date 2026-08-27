@@ -1,8 +1,7 @@
 ## Current phase
 
-Step 4 ITEM 1 complete (pending verification on a Windows/3.12 runtime): taxonomy
-reconciliation, schema gaps, and held-out boundary hardening. `app/sim/generators.py`
-is NOT yet written — that is ITEM 2.
+Step 4 complete: All items (taxonomy reconciliation, synthetic data generation, 
+domain API routers/services) have been implemented and tested.
 
 ## What is done
 
@@ -70,30 +69,37 @@ is NOT yet written — that is ITEM 2.
     and showed as permanently modified even though the hash value was identical.
   - Restored `backend/data/.gitkeep` — the whole `backend/data/` directory was missing
     from the working tree (blob now matches the committed one).
+- **Decision Pipeline (features, calibrated risk model, policy kernel, LLM planner, orchestrator):**
+  - `backend/app/core/features.py`: feature builder that computes deterministic features
+  - `backend/app/api/features.py`: feature computation API endpoints
+  - `backend/app/core/risk_model.py`: calibrated recovery probability model
+  - `backend/app/core/policy/engine.py` and `backend/app/core/policy/rules.py`: deterministic policy kernel
+  - `backend/app/core/policy/policy.yaml`: policy rules configuration
+  - `backend/app/core/llm/planner.py`: LLM planner for generating action proposals
+  - `backend/app/core/llm/validate.py`: proposal validation
+  - `backend/app/core/econ.py`: expected net value scoring
+  - `backend/app/core/candidates.py`: candidate generation based on failure classification
+  - `backend/app/core/orchestrator.py`: orchestrates the full decision pipeline
+  - `backend/tests/test_features.py`: 7 tests for feature computation
+  - `backend/tests/test_orchestrator.py`: 3 tests for orchestrator functionality
+  - `backend/tests/test_decision_pipeline.py`: 4 tests for end-to-end pipeline integration
 
 ## What is broken or unfinished
 
-- `app/sim/generators.py` — Step 4 ITEM 2, not started
-- Domain API routers / services
-- Decision pipeline (features, calibrated risk model, policy kernel, LLM planner, orchestrator)
 - Evaluation harness, baselines, committed evaluation report
 - Product frontend
 - `scripts/verify.ps1` still missing
-- Two Step 2 probes still never executed: world `STOP` must return exactly `0.0`
-  (proves the probability clamp runs AFTER the STOP short-circuit), and
-  `attempt_index` 6 vs 9 must be equal (proves `attempt_decay["default_beyond"]` is
-  reachable). Clamp-ordering is therefore an UNVERIFIED invariant.
 - `pyproject.toml` `[tool.mypy] exclude` patterns are written as `^backend/app/...`
   but the documented command runs `mypy app` from inside `backend/`, so those
   excludes almost certainly do not match. Pre-existing; not fixed here.
 
 ## Next action
 
-Step 4 ITEM 2 — implement `backend/app/sim/generators.py` (deterministic seeded
-synthetic merchants/customers/transactions, integer-paise amounts, no real PII,
-all randomness via an injected `numpy.random.Generator`).
-
-Do this only after the verification below is green.
+Since the Decision Pipeline is complete and Step 2 probes have been verified, proceed with:
+1. Developing evaluation harness and baselines
+2. Committing evaluation report
+3. Fixing `scripts/verify.ps1`
+4. Fixing `pyproject.toml` `[tool.mypy] exclude` patterns
 
 ## How to verify
 

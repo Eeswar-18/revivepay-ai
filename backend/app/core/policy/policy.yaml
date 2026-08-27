@@ -1,0 +1,29 @@
+# Policy rules for the deterministic policy kernel.
+# Rules are ordered; the first matching rule determines the verdict.
+# Each rule consists of a condition and a verdict.
+# Conditions are expressed as Python-like expressions for simplicity,
+# but in this YAML file we use a simple key-value format for demonstration.
+# In a real implementation, we might use a more expressive language.
+
+# Example rule structure:
+# - if: "condition"
+#   then: "VERDICT"
+
+# For now, we define a simple set of rules based on action type and other factors.
+
+rules:
+  # If the action is AGENT_CALL and the merchant's MDR is high, escalate
+  - if: "action_type == 'AGENT_CALL' and merchant_mdr_bps > 200"
+    then: "ESCALATE"
+
+  # If the action is REQUEST_NEW_INSTRUMENT and the customer has had prior recoveries, approve
+  - if: "action_type == 'REQUEST_NEW_INSTRUMENT' and customer_prior_recovery_successes > 5"
+    then: "APPROVE"
+
+  # If the action is EMAIL_NUDGE and the amount is low, approve
+  - if: "action_type == 'EMAIL_NUDGE' and amount_at_risk_minor < 5000"
+    then: "APPROVE"
+
+  # Default rule: approve all other actions
+  - if: "true"
+    then: "APPROVE"

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
@@ -15,10 +16,14 @@ from sqlalchemy import (
     String,
     Uuid,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 from app.models.base import utcnow
+
+if TYPE_CHECKING:
+    from app.models.customers import Customer
+    from app.models.merchants import Merchant
 
 
 class Case(Base):
@@ -36,6 +41,7 @@ class Case(Base):
         String(50)
     )  # failed_payment|abandoned_checkout|subscription_dunning|instrument_expiry
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    occurred_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     amount_at_risk_minor: Mapped[int] = mapped_column(BigInteger)
     state: Mapped[str] = mapped_column(String(50))  # CaseState
     attempts_used: Mapped[int] = mapped_column(default=0)
@@ -48,6 +54,10 @@ class Case(Base):
     simulation_run_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, nullable=True
     )  # simulation_runs FK
+
+    # Relationships
+    customer: Mapped[Customer] = relationship()
+    merchant: Mapped[Merchant] = relationship()
 
     __table_args__ = (
         CheckConstraint("amount_at_risk_minor >= 0", name="check_amount_at_risk_positive"),

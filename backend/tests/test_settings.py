@@ -78,6 +78,18 @@ def test_settings_default_seed() -> None:
     assert s.SIM_DEFAULT_SEED == 42
 
 
+def test_settings_default_virtual_epoch() -> None:
+    """VIRTUAL_EPOCH has a sensible default consistent with ARCHITECTURE.md."""
+    s = Settings(DATABASE_URL="sqlite:///:memory:", LLM_PROVIDER="mock")
+    assert s.VIRTUAL_EPOCH == "2024-01-01T00:00:00Z"
+
+
+def test_settings_default_virtual_clock_rate() -> None:
+    """VIRTUAL_CLOCK_RATE defaults to 60.0 as implied by ARCHITECTURE.md."""
+    s = Settings(DATABASE_URL="sqlite:///:memory:", LLM_PROVIDER="mock")
+    assert s.VIRTUAL_CLOCK_RATE == 60.0
+
+
 def test_get_settings_is_cached() -> None:
     """get_settings() returns the same instance on repeated calls."""
     get_settings.cache_clear()

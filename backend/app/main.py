@@ -26,7 +26,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+# API routers
+from app.api import cases, customers, decisions, features, merchants
 from app.config import Settings, get_settings
+from app.core.executor.clock import clock
 from app.db import check_db_health, init_db
 from app.errors import (
     AppError,
@@ -82,6 +85,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # Startup
         init_db()
+        # Start the virtual clock
+        clock.start()
         logger.info(
             "application_started",
             extra={
@@ -89,6 +94,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "version": _read_app_version(),
                 "environment": cfg.APP_ENV,
                 "llm_provider": cfg.LLM_PROVIDER,
+                "virtual_epoch": cfg.VIRTUAL_EPOCH,
+                "virtual_clock_rate": cfg.VIRTUAL_CLOCK_RATE,
             },
         )
         yield
@@ -178,6 +185,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         _ = request  # available for future auth checks
         return JSONResponse(content=cfg.redacted_summary())
+
+    # Include API routers
+    app.include_router(cases.router)
+    app.include_router(customers.router)
+    app.include_router(merchants.router)
+    app.include_router(decisions.router)
+    app.include_router(features.router)
 
     logger.debug("app_created", extra={"frontend_origin": cfg.FRONTEND_ORIGIN})
     return app

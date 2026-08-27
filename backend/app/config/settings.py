@@ -80,6 +80,9 @@ class Settings(BaseSettings):
 
     # ── Simulation and Evaluation ─────────────────────────────────────────────
     SIM_DEFAULT_SEED: int = 42
+    VIRTUAL_EPOCH: str = "2024-01-01T00:00:00Z"
+    VIRTUAL_CLOCK_RATE: float = 60.0
+    EXPECTED_CHURN_COST_MULTIPLIER: float = 1.0
 
     # ── Safety Controls ───────────────────────────────────────────────────────
     KILL_SWITCH_ENABLED: bool = False

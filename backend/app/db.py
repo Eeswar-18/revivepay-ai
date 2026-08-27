@@ -17,9 +17,13 @@ from collections.abc import Generator
 from typing import Any
 
 from sqlalchemy import Engine, create_engine, event, text
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import Session as sa_session
 
 from app.config import get_settings
+
+# Export Session for use in dependencies
+Session = sa_session
 
 
 class Base(DeclarativeBase):
