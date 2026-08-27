@@ -4,6 +4,7 @@ app/api/cases.py — Case management API endpoints.
 
 from __future__ import annotations
 
+from datetime import UTC
 from typing import Any
 from uuid import UUID
 
@@ -170,20 +171,23 @@ def create_case(
         ) from err
 
     # Create case instance (in a real implementation, we'd use a factory or service)
+    from datetime import datetime, timedelta
     from uuid import UUID
 
     from app.models.cases import Case
 
+    now = datetime.now(UTC)
     case = Case(
         merchant_id=UUID(case_data["merchant_id"]),
         customer_id=UUID(case_data["customer_id"]),
         case_type=case_type.value,
         amount_at_risk_minor=case_data["amount_at_risk_minor"],
         state=case_data.get("state", CaseState.DETECTED.value),
-        detected_at=case_data.get("detected_at"),
+        detected_at=case_data.get("detected_at", now),
         occurred_at=case_data.get("occurred_at"),
-        recovery_deadline_at=case_data.get("recovery_deadline_at"),
+        recovery_deadline_at=case_data.get("recovery_deadline_at", now + timedelta(days=7)),
         recovered_amount_minor=case_data.get("recovered_amount_minor", 0),
+        priority_score=case_data.get("priority_score", 0.5),
     )
 
     # Save via repository

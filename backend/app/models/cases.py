@@ -31,7 +31,7 @@ class Case(Base):
 
     __tablename__ = "cases"
 
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     transaction_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("transactions.id"), nullable=True
     )
