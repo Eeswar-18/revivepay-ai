@@ -8,8 +8,9 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy.orm import Session
 
-from app.db import Session
+from app.db import get_db
 from app.models.decisions import Decision
 from app.models.enums import ActionStatus, ActionType, PolicyVerdict
 from app.repositories.decisions import DecisionRepository
@@ -21,7 +22,7 @@ router = APIRouter(
 )
 
 
-def get_decision_repository(session: Session = Depends(Session)) -> DecisionRepository:
+def get_decision_repository(session: Session = Depends(get_db)) -> DecisionRepository:
     """Dependency to get decision repository."""
     return DecisionRepository(session)
 

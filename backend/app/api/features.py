@@ -8,9 +8,10 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
+from sqlalchemy.orm import Session
 
 from app.core.features import build_features
-from app.db import Session
+from app.db import get_db
 from app.repositories.cases import CaseRepository
 
 router = APIRouter(
@@ -20,7 +21,7 @@ router = APIRouter(
 )
 
 
-def get_case_repository(session: Session = Depends(Session)) -> CaseRepository:
+def get_case_repository(session: Session = Depends(get_db)) -> CaseRepository:
     """Dependency to get case repository."""
     return CaseRepository(session)
 
@@ -28,7 +29,7 @@ def get_case_repository(session: Session = Depends(Session)) -> CaseRepository:
 @router.get("/{case_id}", response_model=dict[str, Any])
 def get_case_features(
     case_id: UUID = Path(..., description="The UUID of the case to compute features for"),
-    session: Session = Depends(Session),
+    session: Session = Depends(get_db),
     case_repo: CaseRepository = Depends(get_case_repository),
 ) -> dict[str, Any]:
     """

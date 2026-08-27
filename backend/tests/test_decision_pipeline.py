@@ -4,6 +4,7 @@ tests/test_decision_pipeline.py — Integration tests for the full decision pipe
 Each test verifies that the components work together correctly:
 case -> features -> risk model -> expected net value -> LLM planner -> policy kernel -> orchestrator
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -198,7 +199,9 @@ def test_decision_pipeline_handles_stop_only_case() -> None:
         assert len(result["scored_candidates"]) > 0  # Should have at least STOP
 
         # Verify that STOP is in the scored candidates
-        stop_found = any(c["action_type"] == ActionType.STOP.value for c in result["scored_candidates"])
+        stop_found = any(
+            c["action_type"] == ActionType.STOP.value for c in result["scored_candidates"]
+        )
         assert stop_found, "STOP action should be in scored candidates"
 
     finally:

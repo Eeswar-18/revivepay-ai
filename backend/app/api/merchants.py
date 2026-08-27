@@ -8,8 +8,9 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy.orm import Session
 
-from app.db import Session
+from app.db import get_db
 from app.models.merchants import Merchant
 from app.repositories.base import BaseRepository
 
@@ -20,7 +21,7 @@ router = APIRouter(
 )
 
 
-def get_merchant_repository(session: Session = Depends(Session)) -> BaseRepository[Merchant]:
+def get_merchant_repository(session: Session = Depends(get_db)) -> BaseRepository[Merchant]:
     """Dependency to get merchant repository."""
     return BaseRepository[Merchant](session, Merchant)
 

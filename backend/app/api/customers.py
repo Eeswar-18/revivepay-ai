@@ -8,8 +8,9 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy.orm import Session
 
-from app.db import Session
+from app.db import get_db
 from app.models.customers import Customer
 from app.models.enums import CustomerSegment
 from app.repositories.base import BaseRepository
@@ -21,7 +22,7 @@ router = APIRouter(
 )
 
 
-def get_customer_repository(session: Session = Depends(Session)) -> BaseRepository[Customer]:
+def get_customer_repository(session: Session = Depends(get_db)) -> BaseRepository[Customer]:
     """Dependency to get customer repository."""
     return BaseRepository[Customer](session, Customer)
 

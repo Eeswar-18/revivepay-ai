@@ -10,7 +10,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session as SQLASession
 
-from app.db import Session
+from app.db import get_db
 from app.models.enums import CaseState, CaseType
 from app.repositories.cases import CaseRepository
 
@@ -21,7 +21,7 @@ router = APIRouter(
 )
 
 
-def get_case_repository(session: SQLASession = Depends(Session)) -> CaseRepository:
+def get_case_repository(session: SQLASession = Depends(get_db)) -> CaseRepository:
     """Dependency to get case repository."""
     return CaseRepository(session)
 
