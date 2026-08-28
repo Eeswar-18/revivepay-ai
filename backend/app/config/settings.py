@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     FRONTEND_ORIGIN: str = "http://localhost:3000"
 
     # ── Database ─────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "sqlite:///./data/revivepay.db"
+    DATABASE_URL: str = "sqlite:///./backend/data/revivepay.db"
 
     # ── API Authentication ───────────────────────────────────────────────────
     API_KEY_OPERATOR: str = "change-me-operator-key-placeholder"

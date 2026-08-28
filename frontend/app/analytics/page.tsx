@@ -212,6 +212,21 @@ export default function AnalyticsPage() {
       }));
   }, [allDecisions]);
 
+  const cumulativeTimeline = useMemo(() => {
+    const sorted = [...allCases]
+      .filter((c) => c.detected_at)
+      .sort((a, b) => new Date(a.detected_at!).getTime() - new Date(b.detected_at!).getTime());
+    return sorted.reduce<{ time: string; cumulative: number; amount: number }[]>((acc, c) => {
+      const prev = acc.length > 0 ? acc[acc.length - 1].cumulative : 0;
+      acc.push({
+        time: new Date(c.detected_at!).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+        cumulative: prev + c.amount_at_risk_minor,
+        amount: c.amount_at_risk_minor,
+      });
+      return acc;
+    }, []);
+  }, [allCases]);
+
   // ── KPI values ────────────────────────────────────────────────────────
 
   const totalAmount = allCases.reduce((s, c) => s + c.amount_at_risk_minor, 0);
@@ -530,21 +545,7 @@ export default function AnalyticsPage() {
         <div className="mt-5 h-[240px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={(() => {
-                // Create a timeline of cumulative risk
-                const sorted = [...allCases]
-                  .filter((c) => c.detected_at)
-                  .sort((a, b) => new Date(a.detected_at!).getTime() - new Date(b.detected_at!).getTime());
-                let cumulative = 0;
-                return sorted.map((c) => {
-                  cumulative += c.amount_at_risk_minor;
-                  return {
-                    time: new Date(c.detected_at!).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-                    cumulative,
-                    amount: c.amount_at_risk_minor,
-                  };
-                });
-              })()}
+              data={cumulativeTimeline}
               margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
             >
               <defs>

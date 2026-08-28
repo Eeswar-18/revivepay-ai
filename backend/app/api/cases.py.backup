@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session as SQLASession
 
 from app.db import get_db
-from app.models.enums import CaseState, CaseType, ActionType, PolicyVerdict
+from app.models.enums import CaseState, CaseType
 from app.repositories.cases import CaseRepository
 from app.repositories.decisions import DecisionRepository
 from app.core.orchestrator import Orchestrator
@@ -210,6 +210,7 @@ def create_case(
 
         # Create a decision record from the pipeline result
         from app.models.decisions import Decision
+        from app.models.enums import ActionType, PolicyVerdict
         from uuid import uuid4
 
         decision = Decision(
@@ -219,7 +220,7 @@ def create_case(
             features_json=pipeline_result.get("features", {}),
             feature_version="v1",  # TODO: Make this configurable
             risk_model_version="v1",  # TODO: Make this configurable
-            p_calibrated=(lambda sc=pipeline_result.get("scored_candidates", []): sc[0].get("p_recovery", 0.0) if sc else 0.0)(),
+            p_calibrated=pipeline_result.get("scored_candidates", [{}])[0].get("p_recovery", 0.0) if pipeline_result.get("scored_candidates") else 0.0,
             candidate_scores_json={
                 str(candidate["action_type"]): {
                     "p_recovery": candidate.get("p_recovery", 0.0),

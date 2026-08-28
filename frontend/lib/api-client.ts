@@ -15,7 +15,10 @@ import type {
   ApiError,
 } from './types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+// When NEXT_PUBLIC_API_BASE_URL is set, use it directly (e.g. for SSR or testing).
+// Otherwise, use a relative path so requests go through the Next.js rewrite proxy,
+// which forwards them to the backend and avoids CORS issues in the browser.
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 // ── Error handling ─────────────────────────────────────────────────────────
 

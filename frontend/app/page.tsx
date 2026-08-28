@@ -16,7 +16,6 @@ import { MetricCard } from '@/components/ui/card';
 import { Card } from '@/components/ui/card';
 import { StateBadge, VerdictBadge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ErrorState } from '@/components/ui/error-state';
 import { MetricCardSkeleton } from '@/components/ui/loading-skeleton';
 import { formatPaise, formatTimeAgo, truncateId, formatActionType, computeRiskLevel } from '@/lib/utils';
 import Link from 'next/link';
@@ -37,13 +36,37 @@ function getRiskDistribution(cases: { state: string; amount_at_risk_minor: numbe
   return dist;
 }
 
+/** Small inline error banner for a section that failed to load */
+function SectionError({ label, onRetry }: { label: string; onRetry: () => void }) {
+  return (
+    <Card>
+      <div className="flex items-center gap-3 py-6 px-4">
+        <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+        <p className="text-sm text-text-3 flex-1">
+          Could not load {label}. The backend may be temporarily unavailable.
+        </p>
+        <button
+          onClick={onRetry}
+          className="text-xs font-medium text-accent hover:text-accent-hover transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    </Card>
+  );
+}
+
 export default function OverviewPage() {
   const cases = useCases({ limit: 100 });
   const decisions = useDecisions({ limit: 20 });
   const version = useVersion();
 
-  const isLoading = cases.isLoading || decisions.isLoading;
-  const isError = cases.isError || decisions.isError;
+  const casesLoading = cases.isLoading;
+  const decisionsLoading = decisions.isLoading;
+  const isLoading = casesLoading || decisionsLoading;
+
+  const casesError = cases.isError;
+  const decisionsError = decisions.isError;
 
   const allCases = cases.data || [];
   const allDecisions = decisions.data || [];
@@ -57,12 +80,40 @@ export default function OverviewPage() {
   const riskDist = getRiskDistribution(allCases);
   const totalRisk = riskDist.LOW + riskDist.MEDIUM + riskDist.HIGH + riskDist.CRITICAL || 1;
 
-  if (isError) {
+  // Only show a full-page error if BOTH data sources failed and neither has data
+  const showFullPageError =
+    casesError && decisionsError && allCases.length === 0 && allDecisions.length === 0 && !isLoading;
+
+  if (showFullPageError) {
     return (
-      <ErrorState
-        message="Unable to connect to RevivePay API. Ensure the backend is running on localhost:8000."
-        onRetry={() => { cases.refetch(); decisions.refetch(); }}
-      />
+      <div className="space-y-8 page-enter">
+        <div>
+          <p className="text-sm text-text-3">{getGreeting()}</p>
+          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-text-1">
+            Payment Risk Intelligence
+          </h1>
+        </div>
+        <Card>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-danger/10 border border-danger/20">
+              <AlertTriangle className="h-7 w-7 text-danger" />
+            </div>
+            <h3 className="mt-4 text-base font-semibold text-text-1">Unable to connect</h3>
+            <p className="mt-2 max-w-sm text-sm text-text-3 leading-relaxed">
+              Could not reach the RevivePay API. Ensure the backend is running on the expected port.
+            </p>
+            <button
+              onClick={() => {
+                cases.refetch();
+                decisions.refetch();
+              }}
+              className="mt-6 rounded-lg bg-surface-2 border border-border px-4 py-2 text-sm font-medium text-text-1 transition-colors hover:bg-surface-3 hover:border-border-strong"
+            >
+              Retry
+            </button>
+          </div>
+        </Card>
+      </div>
     );
   }
 
@@ -157,8 +208,8 @@ export default function OverviewPage() {
         </Card>
       )}
 
-      {/* Empty state */}
-      {!isLoading && totalCases === 0 && (
+      {/* Empty state — only show when cases loaded successfully but returned nothing */}
+      {!isLoading && !casesError && totalCases === 0 && (
         <Card className="py-0">
           <EmptyState
             icon={FlaskConical}
@@ -177,8 +228,18 @@ export default function OverviewPage() {
         </Card>
       )}
 
+      {/* Cases error banner (inline, not blocking) */}
+      {casesError && !isLoading && allCases.length === 0 && (
+        <SectionError label="cases" onRetry={() => cases.refetch()} />
+      )}
+
+      {/* Decisions error banner (inline, not blocking) */}
+      {decisionsError && !isLoading && allDecisions.length === 0 && (
+        <SectionError label="decisions" onRetry={() => decisions.refetch()} />
+      )}
+
       {/* Two-column: Recent Cases + Recent Decisions */}
-      {totalCases > 0 && (
+      {(totalCases > 0 || allDecisions.length > 0) && (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           {/* Recent Cases */}
           <Card padding="none">
@@ -223,6 +284,12 @@ export default function OverviewPage() {
                   </div>
                 </Link>
               ))}
+              {allCases.length === 0 && !casesError && (
+                <div className="px-6 py-10 text-center">
+                  <Layers className="mx-auto h-8 w-8 text-text-4" />
+                  <p className="mt-2 text-sm text-text-3">No cases to display</p>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -262,7 +329,7 @@ export default function OverviewPage() {
                   </div>
                 </div>
               ))}
-              {allDecisions.length === 0 && (
+              {allDecisions.length === 0 && !decisionsError && (
                 <div className="px-6 py-10 text-center">
                   <Activity className="mx-auto h-8 w-8 text-text-4" />
                   <p className="mt-2 text-sm text-text-3">No decisions recorded yet</p>

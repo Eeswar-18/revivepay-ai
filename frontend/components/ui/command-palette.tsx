@@ -53,29 +53,35 @@ export function CommandPalette() {
 
   // ── Keyboard shortcut ───────────────────────────────────────────────
 
+  // ── Reset state when opening ─────────────────────────────────────────
+  const openPalette = useCallback(() => {
+    setQuery('');
+    setSelectedIndex(0);
+    setIsOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
+  const closePalette = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        if (isOpen) {
+          closePalette();
+        } else {
+          openPalette();
+        }
       }
       if (e.key === 'Escape') {
-        setIsOpen(false);
+        closePalette();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // ── Focus input when opened ─────────────────────────────────────────
-
-  useEffect(() => {
-    if (isOpen) {
-      setQuery('');
-      setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [isOpen]);
+  }, [isOpen, openPalette, closePalette]);
 
   // ── Filter commands ─────────────────────────────────────────────────
 
@@ -126,10 +132,10 @@ export function CommandPalette() {
   }, [selectedIndex]);
 
   // ── Reset index when query changes ──────────────────────────────────
-
-  useEffect(() => {
+  const handleQueryChange = useCallback((value: string) => {
+    setQuery(value);
     setSelectedIndex(0);
-  }, [query]);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -150,7 +156,7 @@ export function CommandPalette() {
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             onKeyDown={handleListKeyDown}
             placeholder="Search pages, features..."
             className="flex-1 bg-transparent text-sm text-text-1 placeholder:text-text-4 outline-none"
