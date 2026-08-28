@@ -119,10 +119,12 @@ export default function CustomersPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <input type="text" placeholder="Search customers..." value={search} onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search customers"
               className="w-full rounded-lg border border-border bg-surface-2/50 px-3 py-2 pl-9 text-sm text-text-1 placeholder:text-text-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-colors" />
             <Filter className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-4" />
           </div>
           <select value={segmentFilter} onChange={(e) => setSegmentFilter(e.target.value)}
+            aria-label="Filter by segment"
             className="rounded-lg border border-border bg-surface-2/50 px-3 py-2 text-sm text-text-2 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-colors">
             <option value="">All Segments</option>
             {SEGMENTS.map((s) => <option key={s} value={s}>{s}</option>)}

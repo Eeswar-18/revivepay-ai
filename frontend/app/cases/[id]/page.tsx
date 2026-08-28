@@ -6,9 +6,7 @@ import {
   CheckCircle2,
   XCircle,
   Search,
-  Shield,
   Brain,
-  Zap,
   FileText,
   Target,
   Gavel,
@@ -19,7 +17,6 @@ import { DecisionSummary } from '@/components/case/decision-summary';
 import type { Decision } from '@/lib/types';
 import { Card, CardHeader } from '@/components/ui/card';
 import { StateBadge, RiskBadge, VerdictBadge } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { PageSkeleton } from '@/components/ui/loading-skeleton';
 import {

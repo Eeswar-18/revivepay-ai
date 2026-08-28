@@ -96,7 +96,7 @@ export function truncateId(id: string, chars = 8): string {
 
 // ── Risk level computation ─────────────────────────────────────────────────
 
-import type { CaseState, PolicyVerdict } from './types';
+import type { CaseState } from './types';
 
 /** Derive a risk level from case state and amount */
 export function computeRiskLevel(

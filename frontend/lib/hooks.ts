@@ -3,7 +3,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { api, ApiRequestError } from './api-client';
+import { api } from './api-client';
 
 // ── System ─────────────────────────────────────────────────────────────────
 

@@ -21,7 +21,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { MetricCardSkeleton } from '@/components/ui/loading-skeleton';
 import { computeRiskLevel, formatCaseType } from '@/lib/utils';
-import type { Case } from '@/lib/types';
 
 const COLORS = {
   accent: '#5b73ff',
@@ -122,8 +121,8 @@ export default function RiskPage() {
   const { data: cases, isLoading, isError, refetch } = useCases({ limit: 200 });
   const { data: decisions } = useDecisions({ limit: 200 });
 
-  const allCases = cases || [];
-  const allDecisions = decisions || [];
+  const allCases = useMemo(() => cases || [], [cases]);
+  const allDecisions = useMemo(() => decisions || [], [decisions]);
 
   // ── Memoized data ─────────────────────────────────────────────────────
 

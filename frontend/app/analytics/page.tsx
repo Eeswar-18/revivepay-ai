@@ -115,8 +115,8 @@ export default function AnalyticsPage() {
   const { data: cases, isLoading, isError, refetch } = useCases({ limit: 200 });
   const { data: decisions } = useDecisions({ limit: 200 });
 
-  const allCases = cases || [];
-  const allDecisions = decisions || [];
+  const allCases = useMemo(() => cases || [], [cases]);
+  const allDecisions = useMemo(() => decisions || [], [decisions]);
 
   // ── Memoized chart data ───────────────────────────────────────────────
 

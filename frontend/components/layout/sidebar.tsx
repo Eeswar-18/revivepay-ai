@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -123,6 +123,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
       {/* Collapse toggle */}
       <button
         onClick={onToggle}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         className="hidden lg:flex h-10 items-center justify-center border-t border-border text-text-3 transition-colors hover:bg-surface-2 hover:text-text-1"
       >
         {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -149,6 +150,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
           <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-surface-0 animate-slide-in">
             <button
               onClick={onMobileClose}
+              aria-label="Close navigation menu"
               className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text-1 transition-colors"
             >
               <X className="h-4 w-4" />
@@ -174,6 +176,7 @@ function SidebarLink({
   return (
     <Link
       href={item.href}
+      aria-current={active ? 'page' : undefined}
       className={cn(
         'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150',
         active

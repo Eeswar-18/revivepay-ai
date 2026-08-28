@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FlaskConical, Play, CheckCircle2, Loader2, Sparkles, Shield, Brain } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/card';
-import { Badge, StateBadge, VerdictBadge } from '@/components/ui/badge';
+import { Badge, VerdictBadge } from '@/components/ui/badge';
 import { api } from '@/lib/api-client';
 import { formatPaise, formatActionType, formatPercent, truncateId } from '@/lib/utils';
 import type { CaseDetail, DecisionDetail } from '@/lib/types';
@@ -121,28 +121,33 @@ export default function SimulationPage() {
           <CardHeader title="Payment Scenario" description="Configure a test case to run through the pipeline" />
           <div className="mt-5 space-y-4">
             <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-4 mb-1.5">Merchant ID</label>
+              <label htmlFor="sim-merchant" className="block text-[10px] font-semibold uppercase tracking-wider text-text-4 mb-1.5">Merchant ID</label>
               <input
+                id="sim-merchant"
                 type="text"
                 value={merchantId}
                 onChange={(e) => setMerchantId(e.target.value)}
                 placeholder="UUID of an existing merchant"
+                aria-required="true"
                 className="w-full rounded-lg border border-border bg-surface-2/50 px-3.5 py-2.5 text-sm text-text-1 placeholder:text-text-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 font-mono text-[12px] transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-4 mb-1.5">Customer ID</label>
+              <label htmlFor="sim-customer" className="block text-[10px] font-semibold uppercase tracking-wider text-text-4 mb-1.5">Customer ID</label>
               <input
+                id="sim-customer"
                 type="text"
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
                 placeholder="UUID of an existing customer"
+                aria-required="true"
                 className="w-full rounded-lg border border-border bg-surface-2/50 px-3.5 py-2.5 text-sm text-text-1 placeholder:text-text-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 font-mono text-[12px] transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-4 mb-1.5">Case Type</label>
+              <label htmlFor="sim-casetype" className="block text-[10px] font-semibold uppercase tracking-wider text-text-4 mb-1.5">Case Type</label>
               <select
+                id="sim-casetype"
                 value={caseType}
                 onChange={(e) => setCaseType(e.target.value)}
                 className="w-full rounded-lg border border-border bg-surface-2/50 px-3.5 py-2.5 text-sm text-text-2 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-colors"
@@ -153,9 +158,10 @@ export default function SimulationPage() {
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-4 mb-1.5">Amount (paise)</label>
+              <label htmlFor="sim-amount" className="block text-[10px] font-semibold uppercase tracking-wider text-text-4 mb-1.5">Amount (paise)</label>
               <div className="relative">
                 <input
+                  id="sim-amount"
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -223,10 +229,8 @@ export default function SimulationPage() {
           <CardHeader title="Pipeline Progress" description="Decision pipeline execution stages" />
           <div className="mt-5 space-y-1.5">
             {PIPELINE_STAGES.map((pipelineStage, idx) => {
-              const Icon = pipelineStage.icon;
-              const isComplete = stage > idx;
-              const isCurrent = stage === idx;
-              const isPending = stage < idx;
+              const Icon = pipelineStage.icon;                  const isComplete = stage > idx;
+                  const isCurrent = stage === idx;
 
               return (
                 <div

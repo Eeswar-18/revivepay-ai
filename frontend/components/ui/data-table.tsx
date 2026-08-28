@@ -41,15 +41,12 @@ export function DataTable<T>({
   const secondaryCols = columns.filter(
     (c) => c.key !== primaryCol.key && !c.hideOnMobile
   );
-  const desktopExtraCols = columns.filter(
-    (c) => c.key !== primaryCol.key && c.hideOnMobile
-  );
 
   return (
     <>
       {/* Desktop table view */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full" role="table">
           <thead>
             <tr className="border-b border-border">
               {columns.map((col) => (
@@ -90,11 +87,12 @@ export function DataTable<T>({
       </div>
 
       {/* Mobile card view */}
-      <div className="md:hidden divide-y divide-border/30">
-        {data.map((item, idx) => (
+      <div className="md:hidden divide-y divide-border/30" role="list" aria-label="Data rows">
+        {data.map((item) => (
           <div
             key={keyExtractor(item)}
             onClick={() => onRowClick?.(item)}
+            role="listitem"
             className={cn(
               'px-5 py-4 space-y-2',
               onRowClick && 'cursor-pointer active:bg-surface-2/50 transition-colors'

@@ -43,6 +43,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}
+          aria-label="Toggle navigation menu"
           className="flex lg:hidden h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text-1"
         >
           <Menu className="h-4 w-4" />
@@ -59,6 +60,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
           onClick={() => {
             document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
           }}
+          aria-label="Open command palette (Ctrl+K)"
           className="hidden sm:flex h-8 items-center gap-2 rounded-lg border border-border bg-surface-1/50 px-3 text-xs text-text-3 transition-all duration-150 hover:border-border-strong hover:text-text-2 hover:bg-surface-1"
         >
           <Search className="h-3.5 w-3.5" />
@@ -69,7 +71,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
         </button>
 
         {/* Notifications */}
-        <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-text-3 transition-all duration-150 hover:border-border-strong hover:text-text-1 hover:bg-surface-1">
+        <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-text-3 transition-all duration-150 hover:border-border-strong hover:text-text-1 hover:bg-surface-1" aria-label="Notifications">
           <Bell className="h-4 w-4" />
         </button>
 

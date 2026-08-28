@@ -26,6 +26,7 @@ export function ErrorState({
       {onRetry && (
         <button
           onClick={onRetry}
+          aria-label="Retry loading data"
           className="mt-6 rounded-lg bg-surface-2 border border-border px-4 py-2 text-sm font-medium text-text-1 transition-colors hover:bg-surface-3 hover:border-border-strong"
         >
           Retry

@@ -165,7 +165,7 @@ export default function OverviewPage() {
             <h3 className="text-sm font-semibold text-text-1">Risk Distribution</h3>
             <span className="text-xs text-text-3">{totalCases} cases</span>
           </div>
-          <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-2">
+          <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-2" role="img" aria-label={`Risk distribution: ${riskDist.LOW} low, ${riskDist.MEDIUM} medium, ${riskDist.HIGH} high, ${riskDist.CRITICAL} critical`}>
             {riskDist.LOW > 0 && (
               <div
                 className="bg-success transition-all duration-1000 ease-out"

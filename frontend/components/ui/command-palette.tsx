@@ -160,6 +160,11 @@ export function CommandPalette() {
             onKeyDown={handleListKeyDown}
             placeholder="Search pages, features..."
             className="flex-1 bg-transparent text-sm text-text-1 placeholder:text-text-4 outline-none"
+            aria-label="Search pages and features"
+            aria-expanded={isOpen}
+            aria-controls="command-palette-list"
+            role="combobox"
+            aria-autocomplete="list"
           />
           <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-text-4">
             ESC
@@ -167,7 +172,7 @@ export function CommandPalette() {
         </div>
 
         {/* Results */}
-        <div ref={listRef} className="max-h-[300px] overflow-y-auto py-2">
+        <div ref={listRef} id="command-palette-list" className="max-h-[300px] overflow-y-auto py-2" role="listbox" aria-label="Search results">
           {filtered.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-sm text-text-3">No results found for &ldquo;{query}&rdquo;</p>
