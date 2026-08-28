@@ -49,24 +49,22 @@ class Planner:
             A dictionary representing the planner's proposal with keys:
                 action_type, schedule_offset_hours, justification, feature_citations
         """
-        # Format the prompt
-        prompt = self.prompt_template.format(
+        # Get response from LLM
+        raw_output = self.provider.generate(
+            self.prompt_template,
             case_id=str(case.id),
             amount_at_risk_minor=case.amount_at_risk_minor,
             case_type=case.case_type,
             customer_segment=case.customer.segment,
             merchant_mdr_bps=case.merchant.mdr_bps,
-            features=case.__dict__,  # We pass the whole case for simplicity; in practice, we might pass only the feature vector
+            features=case.__dict__,
             scored_candidates=json.dumps(scored_candidates, indent=2),
             policy_prose=policy_prose,
         )
 
-        # Get response from LLM
-        raw_output = self.provider.generate(prompt)
-
         # Parse the JSON response
         try:
-            proposal = json.loads(raw_output)
+            proposal: dict[str, Any] = json.loads(raw_output)
         except json.JSONDecodeError:
             # In case of invalid JSON, we return a safe default
             # In a real system, we might log the error and retry

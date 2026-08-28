@@ -82,6 +82,9 @@ next-env.d.ts
 
 # SQLite databases (generated at runtime)
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
 *.sqlite
 *.sqlite3
 backend/revivepay.db
